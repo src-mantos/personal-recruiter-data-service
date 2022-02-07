@@ -1,0 +1,36 @@
+{
+  "name": "data-service",
+  "version": "1.0.0",
+  "description": "pulling data from recruiting api's",
+  "main": "main.ts",
+  "author": "mantos",
+  "license": "MIT",
+  "scripts": {
+    "prebuild": "npx tsc --build",
+    "build": "node -r source-map-support/register ./dist/main.js",
+    "test": "jest --config ./test/jest.config.ts",
+    "clean": "rm -r dist",
+    "pretty": "npx prettier --check \"src/**/*\"",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@types/jest": "^27.4.0",
+    "@typescript-eslint/eslint-plugin": "^5.8.1",
+    "@typescript-eslint/parser": "^5.8.1",
+    "eslint": "^8.6.0",
+    "eslint-config-prettier": "^8.3.0",
+    "jest": "^27.4.7",
+    "jsdoc": "^3.6.7",
+    "prettier": "^2.5.1",
+    "source-map-support": "^0.5.21",
+    "ts-jest": "^27.1.3",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.4"
+  },
+  "dependencies": {
+    "@types/node": "^16.11.13",
+    "playwright": "^1.17.1",
+    "reflect-metadata": "^0.1.13",
+    "typeorm": "^0.2.41"
+  }
+}
