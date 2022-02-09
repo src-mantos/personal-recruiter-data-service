@@ -18,7 +18,7 @@ export abstract class PostScraper {
     constructor() {
         this.currentPage = 0;
         this.elementCount = 0;
-        this.init();
+        //this.init();
     }
 
     async init(): Promise<void> {
@@ -28,6 +28,7 @@ export abstract class PostScraper {
         if (this.page == undefined) {
             this.page = await this.browser.newPage();
         }
+        console.log(this.page);
     }
     async clearInstanceData(): Promise<void> {
         this.currentPage = 0;
@@ -42,6 +43,12 @@ export abstract class PostScraper {
         }
     }
 
+    /**
+     * Primary Entry Point for scraping post data. <br/>
+     * Working under the assumption that these sites will maintain some kind of 508c compliance,
+     * it will make sense to parse the anchor tags that relate to a posting.
+     * @param search 
+     */
     abstract searchPostings(search: types.IPostDataScrapeRequest): Promise<types.IPostData[]>;
     abstract nextPage(): void;
     abstract getPageData(): types.IPostData[];
