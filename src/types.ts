@@ -1,11 +1,14 @@
-import "reflect-metadata"
-import { Entity } from "typeorm";
+//# sourceMappingURL=dist/types.js.map
+/* eslint-disable @typescript-eslint/ban-types */
+import 'reflect-metadata';
+import { Entity } from 'typeorm';
+
 /**
- * IPostDataScrapeRequest - 
+ * IPostDataScrapeRequest -
  * The standard job post data request object
- * 
+ *
  */
- export interface IPostDataScrapeRequest{
+export interface IPostDataScrapeRequest {
     /** @type {string} Primary Search Term*/
     keyword: string;
     /** @type {string} Optional Location Parameter*/
@@ -15,37 +18,47 @@ import { Entity } from "typeorm";
 }
 
 /**
- * IPostDataSearchRequest - 
+ * IPostDataSearchRequest -
  * The job post data primary filter query object
- * 
+ *
  */
- export interface IPostDataSearchRequest{
+export interface IPostDataSearchRequest {
     /** @type {object} Descriptive Search/Query Interface*/
     keywords: {
-        "must-have":string;
-        "must-not-have":string;
-        "should-have":string;
-        "should-not-have":string;
+        'must-have': string;
+        'must-not-have': string;
+        'should-have': string;
+        'should-not-have': string;
     };
     /** @type {string} Optional Location Parameter*/
     location?: string;
 }
 
 /**
- * IPostData - 
- * The Standard Job Post Data that will be scraped from underlying services
- * 
+ * VendorMetadata -
+ * standardizing intermediate scrape products
  */
- export interface IPostData{
+interface VendorMetadata {
+    metadata: { [key: string]: any };
+    rawdata: { [key: string]: any };
+}
+/**
+ * IPostData -
+ * The Standard Job Post Data that will be scraped from underlying services
+ *
+ */
+export interface IPostData {
     /** @type {string} scraped service identifier*/
     identifier: string;
     /** @type {string} */
     directURL: string;
+    /**@type {VendorMetadata} vendor specific metadata associated to a post that may or may not be useful*/
+    vendorMetadata: VendorMetadata;
     /** @type {number} the ranking from [1 - ({@link IPostDataScrapeRequest.pageDepth} x service page size)*/
     searchIndex: number;
     /** @type {Date} */
     captureTime: Date;
-    
+
     /** @type {string} Main label from source*/
     title: string;
     /** @type {string} Job Poster*/
@@ -64,9 +77,10 @@ import { Entity } from "typeorm";
  * TypeORM research. not entirely sure this would be for the best considering the analytic data goals
  */
 @Entity()
-export class PostData implements IPostData{
+export class PostData implements IPostData {
     identifier: string;
     directURL: string;
+    vendorMetadata: VendorMetadata;
     searchIndex: number;
     captureTime: Date;
     title: string;
@@ -76,7 +90,11 @@ export class PostData implements IPostData{
     salary?: string;
     postedTime: string;
 
-    constructor(){
+    constructor() {
         this.captureTime = new Date();
+        this.vendorMetadata = {
+            metadata: {},
+            rawdata: {},
+        };
     }
 }
