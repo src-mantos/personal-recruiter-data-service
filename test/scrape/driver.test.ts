@@ -1,27 +1,40 @@
 //# sourceMappingURL=dist/scrape/driver.test.js.map
-import { IndeedPostScraper } from '../../src/scrape/impl/IndeedPostScraper';
 import * as types from '../../src/types';
-import * as fs from 'fs';
+import { PostData } from '../../src/types';
+import { IndeedPostScraper } from '../../src/scrape/impl/IndeedPostScraper';
+import { EntityManager, EntityRepository, MikroORM, RequestContext } from '@mikro-orm/core';
+import ormOpts from '../../src/mikro-orm.config';
 
 /**
  * This is where we want to validate the new additions and try new things.
  * Externalize the test for posterity and clarity
  */
 
+//This flag should be stored as run configuration
+jest.setTimeout(1000 * 60 * 4);
+ormOpts.allowGlobalContext = true;
+
 const simpleSearch: types.IPostDataScrapeRequest = {
     keyword: 'full stack engineer',
     // location: 'Reston, VA',
-    pageDepth: 2,
+    pageDepth: 2 /* this includes underling pagination handling and is required minimum for testing any scraper */,
 };
 
-const indeed: IndeedPostScraper = new IndeedPostScraper();
-
-jest.setTimeout(1000 * 60 * simpleSearch.pageDepth);
-
-it('should complete a basic search', async () => {
+it('will scrape some data and store it', async () => {
+    const indeed: IndeedPostScraper = new IndeedPostScraper();
     await indeed.init();
-    const postData: types.IPostData[] = await indeed.searchPostings(simpleSearch);
-    expect(postData).not.toBeNull();
-    expect(postData).not.toBeUndefined();
+
+    const postData: PostData[] = <PostData[]>await indeed.searchPostings(simpleSearch);
     indeed.clearInstanceData();
+
+    const orm = await MikroORM.init(ormOpts);
+    const postRepository = orm.em.getRepository(PostData);
+
+    for (const entry of postData) {
+        postRepository.persist(entry);
+    }
+
+    await postRepository.flush();
+
+    await orm.close();
 });

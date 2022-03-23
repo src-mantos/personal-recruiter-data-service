@@ -1,7 +1,17 @@
 //# sourceMappingURL=dist/types.js.map
 /* eslint-disable @typescript-eslint/ban-types */
 import 'reflect-metadata';
-import { Entity } from 'typeorm';
+import {
+    Cascade,
+    Collection,
+    Entity,
+    OneToMany,
+    Property,
+    ManyToOne,
+    PrimaryKey,
+    SerializedPrimaryKey,
+} from '@mikro-orm/core';
+import { ObjectId } from '@mikro-orm/mongodb';
 
 /**
  * IPostDataScrapeRequest -
@@ -35,10 +45,10 @@ export interface IPostDataSearchRequest {
 }
 
 /**
- * VendorMetadata -
+ * IVendorMetadata -
  * standardizing intermediate scrape products
  */
-interface VendorMetadata {
+export interface IVendorMetadata {
     metadata: { [key: string]: any };
     rawdata: { [key: string]: any };
 }
@@ -48,12 +58,10 @@ interface VendorMetadata {
  *
  */
 export interface IPostData {
-    /** @type {string} scraped service identifier*/
-    identifier: string;
     /** @type {string} */
     directURL: string;
-    /**@type {VendorMetadata} vendor specific metadata associated to a post that may or may not be useful*/
-    vendorMetadata: VendorMetadata;
+    /**@type {IVendorMetadata} vendor specific metadata associated to a post that may or may not be useful*/
+    vendorMetadata: IVendorMetadata;
     /** @type {number} the ranking from [1 - ({@link IPostDataScrapeRequest.pageDepth} x service page size)*/
     searchIndex: number;
     /** @type {Date} */
@@ -73,21 +81,33 @@ export interface IPostData {
     postedTime: string;
 }
 
-/**
- * TypeORM research. not entirely sure this would be for the best considering the analytic data goals
- */
 @Entity()
 export class PostData implements IPostData {
-    identifier: string;
-    directURL: string;
-    vendorMetadata: VendorMetadata;
+    @PrimaryKey()
+    _id: ObjectId;
+
+    @SerializedPrimaryKey()
+    id: string;
+
+    @Property()
+    directURL!: string;
+    @Property()
+    vendorMetadata: IVendorMetadata;
+    @Property()
     searchIndex: number;
+    @Property()
     captureTime: Date;
+    @Property()
     title: string;
+    @Property()
     organization: string;
+    @Property()
     location: string;
+    @Property()
     description: string;
+    @Property()
     salary?: string;
+    @Property()
     postedTime: string;
 
     constructor() {

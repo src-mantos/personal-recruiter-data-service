@@ -1,9 +1,12 @@
 //# sourceMappingURL=dist/scrape/impl/IndeedPostScraper.js.map
+import type { IPostDataScrapeRequest, IPostData } from '../../types';
+import { PostData } from '../../types';
 import { PostScraper } from '../PostScraper';
-import { chromium, FrameLocator, Locator, Page } from 'playwright';
-import * as types from '../../types';
+import { FrameLocator, Locator, Page } from 'playwright';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+
+//const { IPostDataScrapeRequest } = types;
 
 export class IndeedPostScraper extends PostScraper {
     async clearPopup() {
@@ -26,7 +29,7 @@ export class IndeedPostScraper extends PostScraper {
         });
     }
 
-    async searchPostings(search: types.IPostDataScrapeRequest): Promise<types.IPostData[]> {
+    async searchPostings(search: IPostDataScrapeRequest): Promise<IPostData[]> {
         if (this.page == undefined) {
             throw new Error('Scrape Browser must be initialized and ready.');
         }
@@ -46,10 +49,10 @@ export class IndeedPostScraper extends PostScraper {
             await this.page.waitForEvent('frameattached').catch(this.captureError.bind(this));
             console.log('page ' + currpage + ' out of ' + search.pageDepth);
 
-            const errTime = new Date();
-            await this.page.screenshot({
-                path: path.join(__dirname, '../../../dist', 'pageload-' + errTime.getTime() + '.png'),
-            });
+            // const errTime = new Date();
+            // await this.page.screenshot({
+            //     path: path.join(__dirname, '../../../dist', 'pageload-' + errTime.getTime() + '.png'),
+            // });
 
             const locator = this.page.locator('a.tapItem.result');
             const cardCount = await locator.count();
@@ -57,7 +60,7 @@ export class IndeedPostScraper extends PostScraper {
             for (let index = 0; index < cardCount; index++) {
                 const li = locator.nth(index);
                 await li.click();
-                const postData: types.IPostData = await this._scrapePostData(li, index);
+                const postData: IPostData = await this._scrapePostData(li, index);
 
                 this.fire('Log', postData);
                 pageData.push(postData);
@@ -80,7 +83,7 @@ export class IndeedPostScraper extends PostScraper {
      * @param linkItem
      * @returns
      */
-    async _scrapePostData(linkItem: Locator, index: number): Promise<types.IPostData> {
+    private async _scrapePostData(linkItem: Locator, index: number): Promise<IPostData> {
         if (this.page == undefined) {
             throw new Error('Scrape Browser must be initialized and ready.');
         }
@@ -92,7 +95,7 @@ export class IndeedPostScraper extends PostScraper {
             },
             directURL: this.page.url(),
         };
-        const postData: types.IPostData = new types.PostData();
+        const postData: IPostData = new PostData();
         for (const key of indeedAttrs) {
             postMetadata[key] = await linkItem.getAttribute(key);
         }
@@ -149,7 +152,7 @@ export class IndeedPostScraper extends PostScraper {
         await this.clearPopup();
     }
 
-    getPageData(): types.IPostData[] {
+    getPageData(): IPostData[] {
         throw new Error('Method not implemented.');
     }
 }
