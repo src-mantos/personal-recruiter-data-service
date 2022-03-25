@@ -1,9 +1,9 @@
 import { Options } from '@mikro-orm/core';
-import { PostData, MonRec } from './types';
+import { PostData } from './types';
 
 const options: Options = {
     type: 'mongo',
-    entities: [PostData, MonRec],
+    entities: [PostData],
     dbName: 'test',
     debug: true,
     validate: false,

@@ -1,9 +1,9 @@
 //# sourceMappingURL=dist/scrape/driver.test.js.map
-import * as types from '../../src/types';
-import { PostData } from '../../src/types';
-import { IndeedPostScraper } from '../../src/scrape/impl/IndeedPostScraper';
+import * as types from '../src/types';
+import { PostData } from '../src/types';
+import { IndeedPostScraper } from '../src/scrape/impl/IndeedPostScraper';
 import { EntityManager, EntityRepository, MikroORM, RequestContext } from '@mikro-orm/core';
-import ormOpts from '../../src/mikro-orm.config';
+import ormOpts from '../src/mikro-orm.config';
 
 /**
  * This is where we want to validate the new additions and try new things.

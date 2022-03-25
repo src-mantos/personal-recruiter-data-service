@@ -9,7 +9,7 @@
         "build": "npx tsc --build",
         "run": "node -r source-map-support/register ./dist/main.js",
         "test": "jest --config ./test/jest.config.ts",
-        "check": "jest --config ./test/jest.config.ts /test/scrape/driver.test.ts",
+        "check": "jest --config ./test/jest.config.ts /test/driver.test.ts",
         "clean": "rm -r dist",
         "pretty": "npx prettier --check \"src/**/*\"",
         "lint": "eslint ."
