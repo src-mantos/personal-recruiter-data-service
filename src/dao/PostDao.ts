@@ -1,8 +1,8 @@
-//# sourceMappingURL=dist/dao/PostDao.js.map
+//# sourceMappingURL=dist/src/dao/PostDao.js.map
 import { EntityManager, MongoDriver } from '@mikro-orm/mongodb';
 import { MikroORM, EntityRepository, IDatabaseDriver, Connection } from '@mikro-orm/core';
-import { PostData } from '../types';
 import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest } from '../types';
+import PostData from '../entity/PostData';
 import { BaseDao } from './BaseDao';
 
 export class PostDao extends BaseDao {

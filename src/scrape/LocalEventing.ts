@@ -1,4 +1,4 @@
-//# sourceMappingURL=dist/scrape/LocalEventing.js.map
+//# sourceMappingURL=dist/src/scrape/LocalEventing.js.map
 /* eslint-disable @typescript-eslint/ban-types */
 
 export enum Events {

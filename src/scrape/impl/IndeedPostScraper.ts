@@ -1,13 +1,11 @@
-//# sourceMappingURL=dist/scrape/impl/IndeedPostScraper.js.map
+//# sourceMappingURL=dist/src/scrape/impl/IndeedPostScraper.js.map
 import type { IPostDataScrapeRequest, IPostData } from '../../types';
-import { PostData } from '../../types';
+import PostData from '../../entity/PostData';
 import { PostScraper } from '../PostScraper';
-import { FrameLocator, Locator, Page } from 'playwright';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { FrameLocator, Locator } from 'playwright';
+import { injectable } from 'tsyringe';
 
-//const { IPostDataScrapeRequest } = types;
-
+@injectable()
 export class IndeedPostScraper extends PostScraper {
     async clearPopup() {
         if (this.page == undefined) {
@@ -19,16 +17,6 @@ export class IndeedPostScraper extends PostScraper {
         }
     }
 
-    async captureError() {
-        if (this.page == undefined) {
-            throw new Error('Scrape Browser must be initialized and ready.');
-        }
-        const errTime = new Date();
-        await this.page.screenshot({
-            path: path.join(__dirname, '../../../dist', 'failure-' + errTime.getTime() + '.png'),
-        });
-    }
-
     async searchPostings(search: IPostDataScrapeRequest): Promise<IPostData[]> {
         if (this.page == undefined) {
             throw new Error('Scrape Browser must be initialized and ready.');
@@ -38,24 +26,22 @@ export class IndeedPostScraper extends PostScraper {
         if (search.location) {
             url += '&l=' + encodeURIComponent(search.location);
         }
+        console.log(url);
         await this.page.goto(url);
-        uuidv4();
 
-        const pageData = [];
+        const pageData: IPostData[] = [];
 
         for (let currpage = 1; currpage <= search.pageDepth; currpage++) {
-            //add the page scraping
-
             await this.page.waitForEvent('frameattached').catch(this.captureError.bind(this));
             console.log('page ' + currpage + ' out of ' + search.pageDepth);
 
-            // const errTime = new Date();
-            // await this.page.screenshot({
-            //     path: path.join(__dirname, '../../../dist', 'pageload-' + errTime.getTime() + '.png'),
-            // });
-
-            const locator = this.page.locator('a.tapItem.result');
+            const locator = this.page.locator('a.tapItem');
             const cardCount = await locator.count();
+
+            console.log('card count %s', cardCount);
+            if (cardCount <= 0) {
+                throw new Error('unable to find postings');
+            }
 
             for (let index = 0; index < cardCount; index++) {
                 const li = locator.nth(index);
@@ -63,13 +49,9 @@ export class IndeedPostScraper extends PostScraper {
                 const postData: IPostData = await this._scrapePostData(li, index);
 
                 this.fire('Log', postData);
+                console.log('[INDEED] ' + JSON.stringify(postData));
                 pageData.push(postData);
                 this.fire('Status', { message: 'captured ' + (index + 1) + ' out of ' + (cardCount + 1) });
-                /*
-                await this.page.screenshot({
-                        path: path.join(__dirname, '../../../dist', 'job-index-' + currpage + '-' + index + '.png'),
-                    });
-                     */
             }
             if (currpage < search.pageDepth) {
                 await this.nextPage();
@@ -88,17 +70,17 @@ export class IndeedPostScraper extends PostScraper {
             throw new Error('Scrape Browser must be initialized and ready.');
         }
         const indeedAttrs = ['id', 'data-mobtk', 'data-jk', 'data-ci', 'data-empn', 'data-hiring-event', 'href'];
+        const linkData = await this.getAttributes(linkItem, indeedAttrs);
         const postMetadata: { [key: string]: any } = {
             index: {
                 tick: index,
                 page: this.currentPage,
             },
             directURL: this.page.url(),
+            linkData: linkData,
         };
+
         const postData: IPostData = new PostData();
-        for (const key of indeedAttrs) {
-            postMetadata[key] = await linkItem.getAttribute(key);
-        }
         postData.vendorMetadata.metadata = postMetadata;
 
         await Promise.all([this.page.waitForEvent('frameattached'), this.page.waitForEvent('framenavigated')]).catch(

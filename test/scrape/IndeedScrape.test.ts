@@ -1,4 +1,4 @@
-//# sourceMappingURL=dist/scrape/IndeedScrape.test.js.map
+//# sourceMappingURL=dist/test/scrape/IndeedScrape.test.js.map
 import { IndeedPostScraper } from '../../src/scrape/impl/IndeedPostScraper';
 import * as types from '../../src/types';
 

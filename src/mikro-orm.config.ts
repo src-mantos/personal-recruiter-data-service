@@ -1,10 +1,9 @@
 import { Options } from '@mikro-orm/core';
-import { PostData } from './types';
 
 const options: Options = {
     type: 'mongo',
-    entities: [PostData],
-    dbName: 'test',
+    entitiesTs: ['./src/entity'],
+    dbName: 'post-data-repo',
     debug: true,
     validate: false,
     validateRequired: false,

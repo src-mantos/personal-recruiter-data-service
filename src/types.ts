@@ -1,17 +1,5 @@
-//# sourceMappingURL=dist/types.js.map
+//# sourceMappingURL=dist/src/types.js.map
 /* eslint-disable @typescript-eslint/ban-types */
-import 'reflect-metadata';
-import {
-    Cascade,
-    Collection,
-    Entity,
-    OneToMany,
-    Property,
-    ManyToOne,
-    PrimaryKey,
-    SerializedPrimaryKey,
-} from '@mikro-orm/core';
-import { ObjectId } from '@mikro-orm/mongodb';
 
 /**
  * IPostDataScrapeRequest -
@@ -19,6 +7,10 @@ import { ObjectId } from '@mikro-orm/mongodb';
  *
  */
 export interface IPostDataScrapeRequest {
+    /** @type {string} UUID for corrolating search results*/
+    uuid?: string;
+    /** @type {Date} Search Reuqest time*/
+    requestTime?: Date;
     /** @type {string} Primary Search Term*/
     keyword: string;
     /** @type {string} Optional Location Parameter*/
@@ -79,42 +71,4 @@ export interface IPostData {
     salary?: string;
     /** @type {string} captured posting date, will need to parse this into a date object*/
     postedTime: string;
-}
-
-@Entity()
-export class PostData implements IPostData {
-    @PrimaryKey()
-    _id: ObjectId;
-
-    @SerializedPrimaryKey()
-    id: string;
-
-    @Property()
-    directURL!: string;
-    @Property()
-    vendorMetadata: IVendorMetadata;
-    @Property()
-    searchIndex: number;
-    @Property()
-    captureTime: Date;
-    @Property()
-    title: string;
-    @Property()
-    organization: string;
-    @Property()
-    location: string;
-    @Property()
-    description: string;
-    @Property()
-    salary?: string;
-    @Property()
-    postedTime: string;
-
-    constructor() {
-        this.captureTime = new Date();
-        this.vendorMetadata = {
-            metadata: {},
-            rawdata: {},
-        };
-    }
 }

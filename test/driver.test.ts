@@ -1,9 +1,13 @@
-//# sourceMappingURL=dist/scrape/driver.test.js.map
+//# sourceMappingURL=dist/test/scrape/driver.test.js.map
+import 'reflect-metadata';
 import * as types from '../src/types';
-import { PostData } from '../src/types';
+import PostData from '../src/entity/PostData';
+import { PostScrapeManager } from '../src/scrape/PostScrapeManager';
+import { DicePostScraper } from '../src/scrape/impl/DicePostScraper';
 import { IndeedPostScraper } from '../src/scrape/impl/IndeedPostScraper';
 import { EntityManager, EntityRepository, MikroORM, RequestContext } from '@mikro-orm/core';
 import ormOpts from '../src/mikro-orm.config';
+import container from '../src/DIBindings';
 
 /**
  * This is where we want to validate the new additions and try new things.
@@ -11,30 +15,26 @@ import ormOpts from '../src/mikro-orm.config';
  */
 
 //This flag should be stored as run configuration
-jest.setTimeout(1000 * 60 * 4);
+jest.setTimeout(1000 * 60 * 10);
 ormOpts.allowGlobalContext = true;
 
 const simpleSearch: types.IPostDataScrapeRequest = {
     keyword: 'full stack engineer',
     // location: 'Reston, VA',
-    pageDepth: 2 /* this includes underling pagination handling and is required minimum for testing any scraper */,
+    pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */,
 };
 
-it('will scrape some data and store it', async () => {
-    const indeed: IndeedPostScraper = new IndeedPostScraper();
-    await indeed.init();
-
-    const postData: PostData[] = <PostData[]>await indeed.searchPostings(simpleSearch);
-    indeed.clearInstanceData();
-
-    const orm = await MikroORM.init(ormOpts);
-    const postRepository = orm.em.getRepository(PostData);
-
-    for (const entry of postData) {
-        postRepository.persist(entry);
-    }
-
-    await postRepository.flush();
-
-    await orm.close();
+it('will scrape through orchestration', async () => {
+    const instance = container.resolve(PostScrapeManager);
+    await instance._ready;
+    const searchUuid = instance.processRequest(simpleSearch);
+    expect(searchUuid).not.toBeNull();
+    console.log(
+        JSON.stringify({
+            simpleSearch: simpleSearch,
+            searchUuid: searchUuid,
+        })
+    );
+    await instance._runComplete;
+    await instance.destruct();
 });

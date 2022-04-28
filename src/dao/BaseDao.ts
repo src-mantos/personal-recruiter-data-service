@@ -1,7 +1,6 @@
-import { EntityManager, MongoDriver } from '@mikro-orm/mongodb';
-import { MikroORM, EntityRepository, IDatabaseDriver, Connection } from '@mikro-orm/core';
+//# sourceMappingURL=dist/src/dao/BaseDao.js.map
+import { MikroORM, IDatabaseDriver, Connection } from '@mikro-orm/core';
 import ormOpts from '../mikro-orm.config';
-import { PostData } from '../types';
 
 export abstract class BaseDao {
     protected orm: MikroORM<IDatabaseDriver<Connection>>;
