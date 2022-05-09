@@ -1,6 +1,8 @@
 //# sourceMappingURL=dist/test/scrape/IndeedScrape.test.js.map
 import { IndeedPostScraper } from '../../src/scrape/impl/IndeedPostScraper';
 import * as types from '../../src/types';
+import container from '../../src/DIBindings';
+import PostData from '../../src/entity/PostData';
 
 const simpleSearch: types.IPostDataScrapeRequest = {
     keyword: 'full stack engineer',
@@ -8,14 +10,16 @@ const simpleSearch: types.IPostDataScrapeRequest = {
     pageDepth: 2 /* this includes underling pagination handling and is required minimum for testing any scraper */,
 };
 
-const indeed: IndeedPostScraper = new IndeedPostScraper();
+const indeed: IndeedPostScraper = container.resolve(IndeedPostScraper);
 
 jest.setTimeout(1000 * 60 * simpleSearch.pageDepth);
 
 it('should complete a basic search', async () => {
     await indeed.init();
-    const postData: types.IPostData[] = await indeed.searchPostings(simpleSearch);
+    await indeed.run(simpleSearch);
+    await indeed.clearInstanceData();
+    const postData: PostData[] = <PostData[]>indeed.getPageData();
+
     expect(postData).not.toBeNull();
     expect(postData).not.toBeUndefined();
-    indeed.clearInstanceData();
 });

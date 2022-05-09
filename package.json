@@ -7,7 +7,8 @@
     "license": "MIT",
     "scripts": {
         "build": "npx tsc --build",
-        "run": "node -r source-map-support/register ./dist/main.js",
+        "run": "node -r source-map-support/register ./dist/src/main.js",
+        "debug": "node -r source-map-support/register ./dist/src/debug.js",
         "test": "jest --config ./test/jest.config.ts",
         "check": "jest --config ./test/jest.config.ts /test/driver.test.ts",
         "clean": "rm -r dist",
@@ -33,6 +34,7 @@
     "dependencies": {
         "@mikro-orm/core": "^5.0.5",
         "@mikro-orm/mongodb": "^5.0.5",
+        "dotenv": "^16.0.0",
         "playwright": "^1.17.1",
         "reflect-metadata": "^0.1.13",
         "tsyringe": "^4.6.0",

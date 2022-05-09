@@ -4,6 +4,7 @@ import PostData from '../../src/entity/PostData';
 import { IndeedPostScraper } from '../../src/scrape/impl/IndeedPostScraper';
 import { MikroORM } from '@mikro-orm/core';
 import ormOpts from '../../src/mikro-orm.config';
+import container from '../../src/DIBindings';
 
 //This flag should be stored as run configuration
 jest.setTimeout(1000 * 60 * 4);
@@ -16,11 +17,12 @@ const simpleSearch: types.IPostDataScrapeRequest = {
 };
 
 it('will scrape some data and store it', async () => {
-    const indeed: IndeedPostScraper = new IndeedPostScraper();
+    const indeed: IndeedPostScraper = container.resolve(IndeedPostScraper);
     await indeed.init();
 
-    const postData: PostData[] = <PostData[]>await indeed.searchPostings(simpleSearch);
-    indeed.clearInstanceData();
+    await indeed.run(simpleSearch);
+    await indeed.clearInstanceData();
+    const postData: PostData[] = <PostData[]>indeed.getPageData();
 
     const orm = await MikroORM.init(ormOpts);
     const postRepository = orm.em.getRepository(PostData);

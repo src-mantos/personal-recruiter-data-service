@@ -44,6 +44,21 @@ export interface IVendorMetadata {
     metadata: { [key: string]: any };
     rawdata: { [key: string]: any };
 }
+
+/**
+ * IPostDataIndex -
+ * metric data about the job posting
+ */
+export interface IPostDataIndex {
+    /** number of posts on a page */
+    pageSize: number;
+    /** current post index */
+    postIndex: number;
+    /** current page index */
+    pageIndex: number;
+    /** has the post been fully scraped? */
+    completed: boolean;
+}
 /**
  * IPostData -
  * The Standard Job Post Data that will be scraped from underlying services
@@ -54,8 +69,8 @@ export interface IPostData {
     directURL: string;
     /**@type {IVendorMetadata} vendor specific metadata associated to a post that may or may not be useful*/
     vendorMetadata: IVendorMetadata;
-    /** @type {number} the ranking from [1 - ({@link IPostDataScrapeRequest.pageDepth} x service page size)*/
-    searchIndex: number;
+    /** @type {IPostDataIndex} */
+    indexMetadata: IPostDataIndex;
     /** @type {Date} */
     captureTime: Date;
 
@@ -71,4 +86,44 @@ export interface IPostData {
     salary?: string;
     /** @type {string} captured posting date, will need to parse this into a date object*/
     postedTime: string;
+}
+/**
+ * Base Error Class for explicate error handling?
+ * Removing `` due to instance of issues
+ * https://www.typescriptlang.org/docs/handbook/2/classes.html#inheriting-built-in-types
+ */
+export class ComponentError implements Error {
+    name: string;
+    message: any;
+    stack?: string;
+    constructor(msg: any, name?: string) {
+        this.name = !name ? '[CE]' : name;
+        this.message = msg;
+    }
+    toString(): string {
+        return this.name + ' ' + JSON.stringify(this.message);
+    }
+}
+export class NavigationError extends ComponentError {
+    constructor(input: any) {
+        super(input);
+    }
+}
+
+function aspectAnnotationExample(retryCount = 3) {
+    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+        const originalMethod = descriptor.value;
+
+        descriptor.value = function (...args: any) {
+            for (let i = 0; i < retryCount; i++) {
+                console.log('%d / %d', i, retryCount);
+                try {
+                    return originalMethod.apply(this, args);
+                } catch (ex) {
+                    console.error('Method Failure: ', JSON.stringify(ex));
+                }
+            }
+        };
+        return descriptor;
+    };
 }

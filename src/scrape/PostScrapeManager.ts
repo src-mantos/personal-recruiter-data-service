@@ -19,11 +19,11 @@ export class PostScrapeManager {
 
     constructor(@injectAll('PostScraper') scrapeInterfaces: PostScraper[]) {
         this.interfaces = scrapeInterfaces;
-        const initilized = [];
+        const initialized = [];
         for (const int of this.interfaces) {
-            initilized.push(int.init());
+            initialized.push(int.init());
         }
-        this._ready = Promise.all(initilized);
+        this._ready = Promise.all(initialized);
     }
 
     async destruct(): Promise<void> {
@@ -45,17 +45,33 @@ export class PostScrapeManager {
         }
         searchQuery.uuid = uuidv4();
         /** initialize all of the scrape interfaces */
+        // const completion = [];
+        // for (const inter of this.interfaces) {
+        //     completion.push(inter.searchPostings(searchQuery));
+        // }
+
+        // this._runComplete = Promise.all(completion);
+        // this._runComplete.then((value) => {
+        //     /** search completion */
+        //     console.log('Completed the Scrape Search (arguments):', JSON.stringify(value));
+        // });
+
+        return searchQuery.uuid;
+    }
+    refactorRequest(searchQuery: IPostDataScrapeRequest): string {
         const completion = [];
+        searchQuery.uuid = 'something';
         for (const inter of this.interfaces) {
-            completion.push(inter.searchPostings(searchQuery));
+            completion.push(inter.run(searchQuery));
         }
 
         this._runComplete = Promise.all(completion);
-        this._runComplete.then(() => {
+        this._runComplete.then((value) => {
             /** search completion */
+            console.log('Completed the Scrape Search (arguments):', JSON.stringify(value));
         });
 
-        return searchQuery.uuid;
+        return 'execute success';
     }
 
     /**

@@ -1,5 +1,11 @@
 //# sourceMappingURL=dist/entity/PostData.js.map
-import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest } from '../types';
+import type {
+    IPostDataScrapeRequest,
+    IPostData,
+    IVendorMetadata,
+    IPostDataIndex,
+    IPostDataSearchRequest,
+} from '../types';
 import { Entity, Property, PrimaryKey, SerializedPrimaryKey } from '@mikro-orm/core';
 import { ObjectId } from '@mikro-orm/mongodb';
 
@@ -16,9 +22,10 @@ export default class PostData implements IPostData {
     @Property()
     vendorMetadata: IVendorMetadata;
     @Property()
-    searchIndex: number;
+    indexMetadata: IPostDataIndex;
     @Property()
     captureTime: Date;
+
     @Property()
     title: string;
     @Property()
@@ -37,6 +44,12 @@ export default class PostData implements IPostData {
         this.vendorMetadata = {
             metadata: {},
             rawdata: {},
+        };
+        this.indexMetadata = {
+            pageIndex: 0,
+            pageSize: 0,
+            postIndex: 0,
+            completed: false,
         };
     }
 }
