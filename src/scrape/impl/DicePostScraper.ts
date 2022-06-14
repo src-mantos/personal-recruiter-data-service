@@ -4,14 +4,16 @@ import PostData from '../../entity/PostData';
 import { PostScraper } from '../PostScraper';
 import { FrameLocator, Locator, Page } from 'playwright';
 import { inject, injectable } from 'tsyringe';
+import { PostDao } from '../../dao/PostDao';
 
 @injectable()
 export class DicePostScraper extends PostScraper {
     constructor(
         @inject('scrape_template_vars') variables: string,
-        @inject('scrape_dice_url_template') urlTemplate: string
+        @inject('scrape_dice_url_template') urlTemplate: string,
+        @inject('PostDao') postDao: PostDao
     ) {
-        super(variables);
+        super(variables, postDao);
         this.currentPage = 1;
         this.urlTemplate = urlTemplate;
         this.linkSelector = 'a.card-title-link';
@@ -49,7 +51,15 @@ export class DicePostScraper extends PostScraper {
         return this.navigateToPrimarySearch(search);
     }
 
-    getPageData(): IPostData[] {
-        throw new Error('Method not implemented.');
+    protected transform(post: PostData) {
+        const rawData = post.vendorMetadata.rawdata;
+        // const regex = "[s|S]alary[:\-\s]*\$?([\d,\.])+[:\-\s\$]*([\d,\.])+"
+        post.title = rawData.title;
+        post.location = rawData.location;
+        post.organization = rawData.org;
+        post.postedTime = rawData.postDate;
+        post.description = rawData.detail;
+        // const res = regex.exec(post.description);
+        // console.log('Salary', res?.groups);
     }
 }

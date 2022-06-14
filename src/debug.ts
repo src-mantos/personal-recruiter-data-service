@@ -2,11 +2,10 @@ import 'reflect-metadata';
 import * as types from '../src/types';
 import PostData from '../src/entity/PostData';
 import { PostScrapeManager } from '../src/scrape/PostScrapeManager';
-import { DicePostScraper } from '../src/scrape/impl/DicePostScraper';
-import { IndeedPostScraper } from '../src/scrape/impl/IndeedPostScraper';
-import { EntityManager, EntityRepository, MikroORM, RequestContext } from '@mikro-orm/core';
-import ormOpts from '../src/mikro-orm.config';
+import { ormOpts } from '../src/mikro-orm.config';
 import container from '../src/DIBindings';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * This is where we want to validate the new additions.
@@ -25,7 +24,12 @@ async function run() {
 
     const instance = container.resolve(PostScrapeManager);
     await instance._ready;
-    const searchUuid = instance.refactorRequest(simpleSearch);
+    const searchUuid = instance.processRequest(simpleSearch);
+    setInterval(() => {
+        console.log('************************************');
+        console.log(JSON.stringify(instance.getRequestMetrics()));
+        console.log('************************************');
+    }, 60000);
 
     console.log(
         JSON.stringify({
@@ -34,6 +38,16 @@ async function run() {
         })
     );
     await instance._runComplete;
+    let i = 1;
+    for (const post of instance.requestData) {
+        const filePath = path.join(__dirname, '../dist', 'ScrapeResult-3-' + i + '-data.json');
+        i++;
+        fs.writeFile(filePath, JSON.stringify(post, null, 4), function (err) {
+            let msg = filePath + ' Completed.';
+            if (err) msg = err.message;
+            console.log(msg);
+        });
+    }
     await instance.destruct();
 }
 

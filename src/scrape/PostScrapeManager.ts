@@ -1,11 +1,10 @@
 //# sourceMappingURL=dist/src/scrape/PostScrapeManager.js.map
 import { PostScraper } from './PostScraper';
-import { IndeedPostScraper } from './impl/IndeedPostScraper';
-import { DicePostScraper } from './impl/DicePostScraper';
-import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest } from '../types';
-import { v4 as uuidv4 } from 'uuid';
-import { injectAll, singleton, registry } from 'tsyringe';
-import { setTimeout } from 'timers/promises';
+import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest, IRunMetric } from '../types';
+import { injectAll, singleton, inject } from 'tsyringe';
+import { PostDao } from '../dao/PostDao';
+import { SearchDao } from '../dao/SearchDao';
+import ScrapeRequest from '../entity/ScrapeRequest';
 /**
  * PostScrapeManager -
  * The primary driver for orchestrating the collection of scrape posting data
@@ -16,13 +15,18 @@ export class PostScrapeManager {
     interfaces: PostScraper[];
     _ready: Promise<any>;
     _runComplete: Promise<any>;
+    requestData: IPostData[][];
+    searchDao: SearchDao;
+    activeRequest: ScrapeRequest;
 
-    constructor(@injectAll('PostScraper') scrapeInterfaces: PostScraper[]) {
+    constructor(@injectAll('PostScraper') scrapeInterfaces: PostScraper[], @inject('SearchDao') searchDao: SearchDao) {
         this.interfaces = scrapeInterfaces;
+        this.requestData = [];
         const initialized = [];
         for (const int of this.interfaces) {
             initialized.push(int.init());
         }
+        this.searchDao = searchDao;
         this._ready = Promise.all(initialized);
     }
 
@@ -40,53 +44,39 @@ export class PostScrapeManager {
      * @param searchQuery
      */
     processRequest(searchQuery: IPostDataScrapeRequest): string {
-        if (searchQuery.uuid) {
-            throw new Error('known search queries are not supported for scraping.');
-        }
-        searchQuery.uuid = uuidv4();
-        /** initialize all of the scrape interfaces */
-        // const completion = [];
-        // for (const inter of this.interfaces) {
-        //     completion.push(inter.searchPostings(searchQuery));
-        // }
+        const completion = [];
+        this.activeRequest = new ScrapeRequest(searchQuery);
 
-        // this._runComplete = Promise.all(completion);
-        // this._runComplete.then((value) => {
-        //     /** search completion */
-        //     console.log('Completed the Scrape Search (arguments):', JSON.stringify(value));
-        // });
+        this.searchDao.connect().then(() => {
+            this.searchDao.insert(this.activeRequest);
+        });
+
+        searchQuery.uuid = this.activeRequest.uuid;
+        for (const inter of this.interfaces) {
+            completion.push(inter.run(this.activeRequest));
+        }
+
+        this.searchDao.connect().then(() => {
+            this.searchDao.update(this.activeRequest);
+        });
+
+        this._runComplete = Promise.all(completion);
+        this._runComplete.then(() => {
+            /** search completion */
+            this.activeRequest.complete = true;
+            for (const inter of this.interfaces) {
+                this.requestData.push(inter.getPageData());
+            }
+        });
 
         return searchQuery.uuid;
     }
-    refactorRequest(searchQuery: IPostDataScrapeRequest): string {
-        const completion = [];
-        searchQuery.uuid = 'something';
-        for (const inter of this.interfaces) {
-            completion.push(inter.run(searchQuery));
-        }
 
-        this._runComplete = Promise.all(completion);
-        this._runComplete.then((value) => {
-            /** search completion */
-            console.log('Completed the Scrape Search (arguments):', JSON.stringify(value));
-        });
-
-        return 'execute success';
+    isRunning(): boolean {
+        return this.activeRequest && !this.activeRequest.complete;
     }
 
-    /**
-     * We want to be able to report on any given scrape operation
-     * @param requestID
-     */
-    getRequestStatus(requestID: number): any {
-        throw new Error('Method not implemented.');
-    }
-
-    /**
-     * General purpose data storage for the job posting data
-     * @param postData
-     */
-    private async storePostData(postData: IPostData[]): Promise<void> {
-        throw new Error('Method not implemented.');
+    getRequestMetrics(): IRunMetric[] {
+        return this.activeRequest.metrics;
     }
 }

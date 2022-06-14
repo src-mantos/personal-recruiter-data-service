@@ -5,14 +5,16 @@ import { PostScraper } from '../PostScraper';
 import { FrameLocator, Locator, Page } from 'playwright';
 import { inject, injectable } from 'tsyringe';
 import path from 'path';
+import { PostDao } from '../../dao/PostDao';
 
 @injectable()
 export class IndeedPostScraper extends PostScraper {
     constructor(
         @inject('scrape_template_vars') variables: string,
-        @inject('scrape_ind_url_template') urlTemplate: string
+        @inject('scrape_ind_url_template') urlTemplate: string,
+        @inject('PostDao') postDao: PostDao
     ) {
-        super(variables);
+        super(variables, postDao);
         this.urlTemplate = urlTemplate;
         this.linkSelector = 'a.jcs-JobTitle';
         this.linkAttributes = ['id', 'data-mobtk', 'data-jk', 'data-ci', 'data-empn', 'data-hiring-event', 'href'];
@@ -80,5 +82,15 @@ export class IndeedPostScraper extends PostScraper {
         this.currentPage++;
 
         await this.clearPopup();
+    }
+
+    protected transform(post: PostData) {
+        const rawData = post.vendorMetadata.rawdata;
+        post.title = rawData.title;
+        post.location = rawData.subTitle;
+        post.organization = rawData.subTitle;
+        post.postedTime = rawData.hireInsights;
+        post.description = rawData.description;
+        post.salary = rawData.metadata;
     }
 }

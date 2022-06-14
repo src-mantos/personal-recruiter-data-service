@@ -3,7 +3,7 @@ import * as types from '../src/types';
 import PostData from '../src/entity/PostData';
 import { PostScrapeManager } from '../src/scrape/PostScrapeManager';
 import { EntityManager, EntityRepository, MikroORM, RequestContext } from '@mikro-orm/core';
-import ormOpts from '../src/mikro-orm.config';
+import { ormOpts } from '../src/mikro-orm.config';
 import container from '../src/DIBindings';
 
 //This flag should be stored as run configuration

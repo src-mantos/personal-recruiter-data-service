@@ -3,6 +3,7 @@ import * as types from '../../src/types';
 import PostData from '../../src/entity/PostData';
 import { DicePostScraper } from '../../src/scrape/impl/DicePostScraper';
 import container from '../../src/DIBindings';
+import ScrapeRequest from '../../src/entity/ScrapeRequest';
 
 //This flag should be stored as run configuration
 jest.setTimeout(1000 * 60 * 8);
@@ -16,7 +17,7 @@ const simpleSearch: types.IPostDataScrapeRequest = {
 const dice: DicePostScraper = container.resolve(DicePostScraper);
 it('should complete a basic search', async () => {
     await dice.init();
-    await dice.run(simpleSearch);
+    await dice.run(new ScrapeRequest(simpleSearch));
     await dice.clearInstanceData();
     const postData: PostData[] = <PostData[]>dice.getPageData();
 

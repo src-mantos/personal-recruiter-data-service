@@ -2,24 +2,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
 /**
- * IPostDataScrapeRequest -
- * The standard job post data request object
- *
- */
-export interface IPostDataScrapeRequest {
-    /** @type {string} UUID for corrolating search results*/
-    uuid?: string;
-    /** @type {Date} Search Reuqest time*/
-    requestTime?: Date;
-    /** @type {string} Primary Search Term*/
-    keyword: string;
-    /** @type {string} Optional Location Parameter*/
-    location?: string;
-    /** @type {number} Number of pages to scrape*/
-    pageDepth: number;
-}
-
-/**
  * IPostDataSearchRequest -
  * The job post data primary filter query object
  *
@@ -68,9 +50,9 @@ export interface IPostData {
     /** @type {string} */
     directURL: string;
     /**@type {IVendorMetadata} vendor specific metadata associated to a post that may or may not be useful*/
-    vendorMetadata: IVendorMetadata;
+    vendorMetadata?: IVendorMetadata;
     /** @type {IPostDataIndex} */
-    indexMetadata: IPostDataIndex;
+    indexMetadata?: IPostDataIndex;
     /** @type {Date} */
     captureTime: Date;
 
@@ -87,9 +69,41 @@ export interface IPostData {
     /** @type {string} captured posting date, will need to parse this into a date object*/
     postedTime: string;
 }
+
+/**
+ * IPostDataScrapeRequest -
+ * The standard job post data request object
+ *
+ */
+export interface IPostDataScrapeRequest {
+    /** @type {string} UUID for corrolating search results*/
+    uuid?: string;
+    /** @type {Date} Search Reuqest time*/
+    requestTime?: Date;
+    /** @type {string} Primary Search Term*/
+    keyword: string;
+    /** @type {string} Optional Location Parameter*/
+    location?: string;
+    /** @type {number} Number of pages to scrape*/
+    pageDepth: number;
+}
+/**
+ * IRunState -
+ * communicating metrics out of the scrape/capture interface
+ */
+export interface IRunState {
+    complete: boolean;
+    metrics: IRunMetric[];
+}
+export interface IRunMetric {
+    vendorDesc: string;
+    numTotal: number;
+    numComplete: number;
+    pageSize: number;
+}
 /**
  * Base Error Class for explicate error handling?
- * Removing `` due to instance of issues
+ * Removing `extends` due to inheritance issues
  * https://www.typescriptlang.org/docs/handbook/2/classes.html#inheriting-built-in-types
  */
 export class ComponentError implements Error {
@@ -109,7 +123,7 @@ export class NavigationError extends ComponentError {
         super(input);
     }
 }
-
+/**Not Used, i just wanted to have a reference */
 function aspectAnnotationExample(retryCount = 3) {
     return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;

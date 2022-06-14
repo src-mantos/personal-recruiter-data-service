@@ -1,12 +1,18 @@
-import { Options } from '@mikro-orm/core';
+import { Options, ReflectMetadataProvider } from '@mikro-orm/core';
 
-const options: Options = {
+export const ormOpts: Options = {
     type: 'mongo',
     entitiesTs: ['./src/entity'],
+    entities: ['./dist/src/entity'],
     dbName: 'post-data-repo',
     debug: true,
     validate: false,
     validateRequired: false,
+    clientUrl: 'mongodb://root:example@localhost:27017/',
+    metadataProvider: ReflectMetadataProvider,
 };
 
-export default options;
+export const PropDefaults = {
+    Nullable: { nullable: true },
+    Unique: { unique: true },
+};

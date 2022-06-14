@@ -3,6 +3,7 @@ import { IndeedPostScraper } from '../../src/scrape/impl/IndeedPostScraper';
 import * as types from '../../src/types';
 import container from '../../src/DIBindings';
 import PostData from '../../src/entity/PostData';
+import ScrapeRequest from '../../src/entity/ScrapeRequest';
 
 const simpleSearch: types.IPostDataScrapeRequest = {
     keyword: 'full stack engineer',
@@ -16,7 +17,7 @@ jest.setTimeout(1000 * 60 * simpleSearch.pageDepth);
 
 it('should complete a basic search', async () => {
     await indeed.init();
-    await indeed.run(simpleSearch);
+    await indeed.run(new ScrapeRequest(simpleSearch));
     await indeed.clearInstanceData();
     const postData: PostData[] = <PostData[]>indeed.getPageData();
 

@@ -6,8 +6,8 @@ import { PostScrapeManager } from '../src/scrape/PostScrapeManager';
 import { DicePostScraper } from '../src/scrape/impl/DicePostScraper';
 import { IndeedPostScraper } from '../src/scrape/impl/IndeedPostScraper';
 import { EntityManager, EntityRepository, MikroORM, RequestContext } from '@mikro-orm/core';
-import ormOpts from '../src/mikro-orm.config';
 import container from '../src/DIBindings';
+import ScrapeRequest from '../src/entity/ScrapeRequest';
 
 /**
  * This is where we want to validate the new additions and try new things.
@@ -15,19 +15,18 @@ import container from '../src/DIBindings';
  */
 
 //This flag should be stored as run configuration
-jest.setTimeout(1000 * 60 * 10);
-ormOpts.allowGlobalContext = true;
+jest.setTimeout(1000 * 60 * 1);
 
-const simpleSearch: types.IPostDataScrapeRequest = {
+const simpleSearch: ScrapeRequest = new ScrapeRequest({
     keyword: 'full stack engineer',
     location: 'Seattle, WA',
-    pageDepth: 2 /* this includes underling pagination handling and is required minimum for testing any scraper */,
-};
+    pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */,
+});
 
 it('will Check the consolidation refactor', async () => {
     const instance = container.resolve(PostScrapeManager);
     await instance._ready;
-    const searchUuid = instance.refactorRequest(simpleSearch);
+    const searchUuid = instance.processRequest(simpleSearch);
     expect(searchUuid).not.toBeNull();
     console.log(
         JSON.stringify({

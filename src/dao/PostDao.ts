@@ -1,9 +1,11 @@
 //# sourceMappingURL=dist/src/dao/PostDao.js.map
-import { EntityManager, MongoDriver } from '@mikro-orm/mongodb';
-import { MikroORM, EntityRepository, IDatabaseDriver, Connection } from '@mikro-orm/core';
+import { EntityManager, EntityRepository, MongoDriver } from '@mikro-orm/mongodb';
+import { MikroORM, IDatabaseDriver, Connection, Loaded } from '@mikro-orm/core';
 import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest } from '../types';
 import PostData from '../entity/PostData';
 import { BaseDao } from './BaseDao';
+
+type DbProxy = Loaded<PostData, never> | null;
 
 export class PostDao extends BaseDao {
     private repository: EntityRepository<PostData>;
@@ -11,9 +13,26 @@ export class PostDao extends BaseDao {
         super();
     }
 
-    async connect() {
-        super.connect();
-        this.repository = this.orm.em.getRepository(PostData);
+    public async connect(): Promise<any> {
+        await super.connect();
+        if (!this.repository) {
+            this.repository = this.orm.em.getRepository(PostData);
+        }
+    }
+
+    async upsert(post: PostData | IPostData): Promise<void> {
+        const existing: DbProxy = await this.repository.findOne({ directURL: post.directURL });
+        if (existing != null) {
+            console.log('Existing', JSON.stringify(existing));
+            console.log('Incomming', JSON.stringify(post));
+            existing.update(post);
+            this.repository.persist(existing);
+        } else {
+            this.repository.persist(post);
+        }
+    }
+    async flush() {
+        this.repository.flush();
     }
     /**
      * Primary data input from scrapers/transformers

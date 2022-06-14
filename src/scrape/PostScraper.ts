@@ -1,19 +1,18 @@
 //# sourceMappingURL=dist/src/scrape/PostScraper.js.map
-import { ComponentError, NavigationError, IPostDataScrapeRequest, IPostData } from '../types';
+import { ComponentError, NavigationError, IPostDataScrapeRequest, IPostData, IRunMetric } from '../types';
 import { chromium, Browser, Page, Locator } from 'playwright';
 import { LocalEventing } from './LocalEventing';
 import path from 'path';
 import { inject } from 'tsyringe';
 import PostData from '../entity/PostData';
+import { PostDao } from '../dao/PostDao';
+import ScrapeRequest from '../entity/ScrapeRequest';
 
 function IgnoreFactory(page: Page | undefined) {
-    return function (ex: any) {
-        const err: Error = ex;
-        //console.log('Ignore: %s', err.message);
-        if (page)
-            page.screenshot({
-                path: path.join(__dirname, '../../dist', 'IF-failure-' + new Date().getTime() + '.png'),
-            });
+    return function () {
+        /**logging existed here to check failure conditions.
+         * this is only used to swallow timeout errors from playwright
+         */
     };
 }
 
@@ -36,20 +35,22 @@ export abstract class PostScraper extends LocalEventing {
     linkAttributes: string[];
     vendorDesc: string;
     runData: PostData[];
+    postDao: PostDao;
 
-    constructor(@inject('scrape_template_vars') variables: string) {
+    constructor(@inject('scrape_template_vars') variables: string, @inject('PostDao') postDao: PostDao) {
         super();
         this.currentPage = 0;
         this.elementCount = 0;
         this.templateVars = variables.split(',');
         this.urlTemplate = '';
         this.runData = [];
+        this.postDao = postDao;
     }
 
     /**
      * Initialize the Playwright Browser & Page Objects
      */
-    async init(): Promise<PostScraper> {
+    public async init(): Promise<PostScraper> {
         if (this.browser == undefined) {
             this.browser = await chromium.launch();
         }
@@ -63,7 +64,7 @@ export abstract class PostScraper extends LocalEventing {
      * a general purpose page/tab for scrape usage. also initializes networking short cuts.
      * @returns playwright.Page
      */
-    async createNewPage(): Promise<Page> {
+    protected async createNewPage(): Promise<Page> {
         if (this.browser == undefined) {
             const err: ComponentError = new Error('Scrape Browsers need to be defined to generate a new page');
             throw err;
@@ -84,7 +85,7 @@ export abstract class PostScraper extends LocalEventing {
     /**
      * Playwright Object Destruction
      */
-    async clearInstanceData(): Promise<void> {
+    public async clearInstanceData(): Promise<void> {
         this.currentPage = 0;
         this.elementCount = 0;
         if (this.page != undefined) {
@@ -100,6 +101,10 @@ export abstract class PostScraper extends LocalEventing {
     public getPageData(): IPostData[] {
         return this.runData;
     }
+    /**
+     * main iteration method for all search scrapers
+     * @param search
+     */
     protected abstract nextPage(search?: IPostDataScrapeRequest): Promise<void>;
     /**
      * implementation specific direct url scraping capabilities. add to the post data supplied
@@ -116,6 +121,8 @@ export abstract class PostScraper extends LocalEventing {
         return post;
     }
 
+    protected abstract transform(post: PostData): void;
+
     /**
      * Primary Entry Point for scraping post data.
      * - verify argument object
@@ -124,18 +131,29 @@ export abstract class PostScraper extends LocalEventing {
      * - fetch post data by local index
      * @param IPostDataScrapeRequest
      */
-    public async run(search: IPostDataScrapeRequest): Promise<string> {
+    public async run(search: ScrapeRequest): Promise<void> {
         if (!search.uuid) {
             const err: ComponentError = new Error('No Search UUID to associate results');
             throw err;
         }
-
-        //let dataSet: PostData[] = [];
+        /**Reset Run State Data */
+        this.runData = [];
         await this.navigateToPrimarySearch(search);
 
+        /**
+         * this.vendorDesc
+         * search.pageDepth
+         */
+        const metric: IRunMetric = {
+            vendorDesc: this.vendorDesc,
+            numTotal: -1,
+            numComplete: 0,
+            pageSize: -1,
+        };
         let indexCt = 0;
         for (let i = 1; i <= search.pageDepth; i++) {
-            const pageIndex: PostData[] = await this.buildDataTree();
+            const pageIndex: PostData[] = await this.buildDataTree(metric);
+
             this.runData = this.runData.concat(pageIndex);
             indexCt += pageIndex.length;
 
@@ -143,14 +161,14 @@ export abstract class PostScraper extends LocalEventing {
                 await this.nextPage(search);
             }
         }
+        metric.numTotal = metric.pageSize * search.pageDepth;
+        search.metrics.push(metric);
         console.log('[Index] ' + indexCt);
         try {
-            await this.fetchPostDataSet(this.runData);
+            await this.fetchPostDataSet(this.runData, metric);
         } catch (ex) {
             console.error('Runtime Exception', ex);
         }
-
-        return 'FAIL';
     }
 
     /** Common Abstraction Layer*/
@@ -183,7 +201,7 @@ export abstract class PostScraper extends LocalEventing {
             .catch(IgnoreFactory(this.page));
     }
 
-    protected async buildDataTree(): Promise<PostData[]> {
+    protected async buildDataTree(metric: IRunMetric): Promise<PostData[]> {
         if (this.page == undefined) {
             throw new ComponentError('Page Object Undefined', '[PostScraper]');
         }
@@ -220,7 +238,7 @@ export abstract class PostScraper extends LocalEventing {
             );
             throw err;
         }
-
+        metric.pageSize = linkCt;
         const dataSet: PostData[] = [];
         for (let index = 0; index < linkCt; index++) {
             const link = links.nth(index);
@@ -256,7 +274,7 @@ export abstract class PostScraper extends LocalEventing {
      * @param dataSet
      * @returns
      */
-    async fetchPostDataSet(dataSet: PostData[]): Promise<PostData[]> {
+    protected async fetchPostDataSet(dataSet: PostData[], metric: IRunMetric): Promise<PostData[]> {
         for (const post of dataSet) {
             const page = await this.createNewPage();
             let complete = post.indexMetadata.completed;
@@ -268,21 +286,27 @@ export abstract class PostScraper extends LocalEventing {
                         .waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 })
                         .catch(IgnoreFactory(this.page));
                     await this.scrapePostData(post, page);
+                    this.transform(post);
                     complete = true;
                     post.indexMetadata.completed = true;
+                    metric.numComplete += 1;
                     //TODO: update post with status-ing
                 } catch (ex) {
                     console.error('Failed to retrieve Job Post, reattempting:', JSON.stringify(post));
                     retries--;
                 }
             }
-            await page.close();
+            const buffer = [];
+            buffer.push(page.close());
+            buffer.push(this.postDao.connect());
+            await Promise.all(buffer);
+            this.postDao.upsert(post);
         }
         return dataSet;
     }
 
     /** Utility Methods that would be useful in all scrapers */
-    async getAttributes(domItem: Locator, attributes: string[]): Promise<{ [key: string]: any }> {
+    protected async getAttributes(domItem: Locator, attributes: string[]): Promise<{ [key: string]: any }> {
         const retVal: any = {};
         for (const key of attributes) {
             retVal[key] = await domItem.getAttribute(key);
@@ -290,7 +314,7 @@ export abstract class PostScraper extends LocalEventing {
         return retVal;
     }
 
-    async captureError() {
+    protected async captureError() {
         if (this.page == undefined) {
             throw new Error('Scrape Browser must be initialized and ready.');
         }
