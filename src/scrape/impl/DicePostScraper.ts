@@ -54,11 +54,11 @@ export class DicePostScraper extends PostScraper {
     protected transform(post: PostData) {
         const rawData = post.vendorMetadata.rawdata;
         // const regex = "[s|S]alary[:\-\s]*\$?([\d,\.])+[:\-\s\$]*([\d,\.])+"
-        post.title = rawData.title;
-        post.location = rawData.location;
-        post.organization = rawData.org;
-        post.postedTime = rawData.postDate;
-        post.description = rawData.detail;
+        post.title = rawData.title.join(' ');
+        post.location = rawData.location.join(' ');
+        post.organization = rawData.org.join(' ');
+        post.postedTime = rawData.postDate.join(' ');
+        post.description = rawData.detail.join(' ');
         // const res = regex.exec(post.description);
         // console.log('Salary', res?.groups);
     }

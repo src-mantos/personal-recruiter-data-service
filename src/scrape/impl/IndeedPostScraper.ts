@@ -86,11 +86,11 @@ export class IndeedPostScraper extends PostScraper {
 
     protected transform(post: PostData) {
         const rawData = post.vendorMetadata.rawdata;
-        post.title = rawData.title;
-        post.location = rawData.subTitle;
-        post.organization = rawData.subTitle;
-        post.postedTime = rawData.hireInsights;
-        post.description = rawData.description;
-        post.salary = rawData.metadata;
+        post.title = rawData.title.join(' ');
+        post.location = rawData.subTitle.join(' ');
+        post.organization = rawData.subTitle.join(' ');
+        post.postedTime = rawData.hireInsights.join(' ');
+        post.description = rawData.description.join(' ');
+        post.salary = rawData.metadata.join(' ');
     }
 }

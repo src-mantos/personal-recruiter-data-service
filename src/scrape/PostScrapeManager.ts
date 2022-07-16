@@ -3,8 +3,9 @@ import { PostScraper } from './PostScraper';
 import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest, IRunMetric } from '../types';
 import { injectAll, singleton, inject } from 'tsyringe';
 import { PostDao } from '../dao/PostDao';
-import { SearchDao } from '../dao/SearchDao';
+import { ScrapeDao } from '../dao/ScrapeDao';
 import ScrapeRequest from '../entity/ScrapeRequest';
+import mongoose from 'mongoose';
 /**
  * PostScrapeManager -
  * The primary driver for orchestrating the collection of scrape posting data
@@ -16,17 +17,20 @@ export class PostScrapeManager {
     _ready: Promise<any>;
     _runComplete: Promise<any>;
     requestData: IPostData[][];
-    searchDao: SearchDao;
+    scrapeDao: ScrapeDao;
     activeRequest: ScrapeRequest;
+    workQueue: { (): Promise<any> }[];
 
-    constructor(@injectAll('PostScraper') scrapeInterfaces: PostScraper[], @inject('SearchDao') searchDao: SearchDao) {
+    constructor(@injectAll('PostScraper') scrapeInterfaces: PostScraper[], @inject('ScrapeDao') scrapeDao: ScrapeDao) {
         this.interfaces = scrapeInterfaces;
         this.requestData = [];
+        this.workQueue = [];
         const initialized = [];
         for (const int of this.interfaces) {
             initialized.push(int.init());
         }
-        this.searchDao = searchDao;
+        this.scrapeDao = scrapeDao;
+        initialized.push(this.scrapeDao.connection.connect());
         this._ready = Promise.all(initialized);
     }
 
@@ -35,7 +39,57 @@ export class PostScrapeManager {
         for (const int of this.interfaces) {
             off.push(int.clearInstanceData());
         }
+        off.push(this.scrapeDao.connection.disconnect());
         await Promise.all(off);
+    }
+
+    queueRequest(searchQuery: IPostDataScrapeRequest): string {
+        const req = new ScrapeRequest(searchQuery);
+        this.workQueue.push(async () => {
+            await this.processQueue(req);
+        });
+        return req.uuid;
+    }
+
+    dequeueRequest(): { (): Promise<any> } {
+        const next = this.workQueue.shift();
+        if (next != undefined) {
+            return next;
+        }
+        return async () => {
+            Promise.resolve('Queue Complete');
+        };
+    }
+
+    async runPromiseQueue(): Promise<void> {
+        while (this.workQueue.length >= 1) {
+            const result = await this.dequeueRequest()();
+            if (result) {
+                console.log('The Resolve failover tripped?', result);
+                break;
+            }
+        }
+    }
+
+    private async processQueue(query: ScrapeRequest): Promise<void> {
+        const completion = [];
+        this.activeRequest = query;
+        this.scrapeDao.insert(this.activeRequest);
+        for (const inter of this.interfaces) {
+            completion.push(inter.run(this.activeRequest));
+        }
+
+        const timer = setInterval(() => {
+            (async () => {
+                console.log('updating active request', JSON.stringify(this.activeRequest));
+                await this.scrapeDao.update(this.activeRequest);
+            })();
+        }, 60000);
+
+        await Promise.all(completion);
+        clearInterval(timer);
+        this.activeRequest.complete = true;
+        await this.scrapeDao.update(this.activeRequest);
     }
 
     /**
@@ -46,24 +100,27 @@ export class PostScrapeManager {
     processRequest(searchQuery: IPostDataScrapeRequest): string {
         const completion = [];
         this.activeRequest = new ScrapeRequest(searchQuery);
+        this.activeRequest._id = new mongoose.Types.ObjectId();
 
-        this.searchDao.connect().then(() => {
-            this.searchDao.insert(this.activeRequest);
-        });
+        this.scrapeDao.insert(this.activeRequest);
 
         searchQuery.uuid = this.activeRequest.uuid;
         for (const inter of this.interfaces) {
             completion.push(inter.run(this.activeRequest));
         }
-
-        this.searchDao.connect().then(() => {
-            this.searchDao.update(this.activeRequest);
-        });
+        /** Adding periodic updates for metric reporting */
+        const timer = setInterval(() => {
+            (async () => {
+                await this.scrapeDao.update(this.activeRequest);
+            })();
+        }, 60000);
 
         this._runComplete = Promise.all(completion);
         this._runComplete.then(() => {
             /** search completion */
+            clearInterval(timer);
             this.activeRequest.complete = true;
+            this.scrapeDao.update(this.activeRequest);
             for (const inter of this.interfaces) {
                 this.requestData.push(inter.getPageData());
             }

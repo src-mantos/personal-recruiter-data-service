@@ -2,25 +2,34 @@ import 'reflect-metadata';
 import * as types from '../src/types';
 import PostData from '../src/entity/PostData';
 import { PostScrapeManager } from '../src/scrape/PostScrapeManager';
-import { EntityManager, EntityRepository, MikroORM, RequestContext } from '@mikro-orm/core';
-import { ormOpts } from '../src/mikro-orm.config';
+
 import container from '../src/DIBindings';
+import fs from 'fs';
+import path from 'path';
+import { MongoConnection } from '../src/dao/MongoConnection';
 
-//This flag should be stored as run configuration
-jest.setTimeout(1000 * 60 * 10);
-ormOpts.allowGlobalContext = true;
+/**
+ * This is where we want to validate the new additions.
+ * the ts-node integration is great for jest integration but debugging is problematic
+ * this is the primary debug entry point for vs code
+ */
 
-const simpleSearch: types.IPostDataScrapeRequest = {
-    keyword: 'full stack engineer',
-    // location: 'Reston, VA',
-    pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */,
-};
+it('will scrape some data and store it', async () => {
+    const simpleSearch: types.IPostDataScrapeRequest = {
+        keyword: 'full stack engineer',
+        //location: 'Seattle, WA',
+        pageDepth: 3 /* this includes underling pagination handling and is required minimum for testing any scraper */,
+    };
 
-it('will scrape through orchestration', async () => {
     const instance = container.resolve(PostScrapeManager);
     await instance._ready;
     const searchUuid = instance.processRequest(simpleSearch);
-    expect(searchUuid).not.toBeNull();
+    setInterval(() => {
+        console.log('************************************');
+        console.log(JSON.stringify(instance.getRequestMetrics()));
+        console.log('************************************');
+    }, 60000);
+
     console.log(
         JSON.stringify({
             simpleSearch: simpleSearch,
@@ -29,4 +38,6 @@ it('will scrape through orchestration', async () => {
     );
     await instance._runComplete;
     await instance.destruct();
+    const conn = container.resolve(MongoConnection);
+    await conn.disconnect();
 });

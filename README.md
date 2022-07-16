@@ -11,3 +11,7 @@ the [Playwright](https://playwright.dev/docs/cli#generate-code) library was chos
 `npx playwright codegen`
 
 this will open a chromium browser and playwright script generator.
+
+
+# References
+- [ref](https://link.to.attribute)

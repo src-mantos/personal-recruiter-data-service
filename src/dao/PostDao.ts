@@ -1,39 +1,87 @@
 //# sourceMappingURL=dist/src/dao/PostDao.js.map
-import { EntityManager, EntityRepository, MongoDriver } from '@mikro-orm/mongodb';
-import { MikroORM, IDatabaseDriver, Connection, Loaded } from '@mikro-orm/core';
 import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest } from '../types';
 import PostData from '../entity/PostData';
-import { BaseDao } from './BaseDao';
+import { MongoConnection } from './MongoConnection';
+import mongoose, { Schema, model, Model, connect, Types } from 'mongoose';
+import { inject, injectable } from 'tsyringe';
+import { ScrapeDataModel } from './ScrapeDao';
 
-type DbProxy = Loaded<PostData, never> | null;
+const PostDataSchema = new Schema<IPostData>(
+    {
+        _id: Schema.Types.ObjectId,
+        request: { type: Schema.Types.ObjectId, ref: 'post-request' },
+        directURL: { type: String, required: true, index: true },
+        vendorMetadata: {
+            metadata: Schema.Types.Mixed,
+            rawdata: Schema.Types.Mixed,
+        },
+        indexMetadata: {
+            pageSize: { type: Number, required: true },
+            postIndex: { type: Number, required: true },
+            pageIndex: { type: Number, required: true },
+            completed: { type: Boolean, required: true },
+        },
+        captureTime: { type: Date, required: true },
+        postedTime: { type: String, required: false },
 
-export class PostDao extends BaseDao {
-    private repository: EntityRepository<PostData>;
-    constructor() {
-        super();
+        title: { type: String, required: true },
+        organization: { type: String, required: true, index: true },
+        description: { type: String, required: true },
+        location: { type: String, required: true, index: true },
+        salary: { type: String, required: false, index: true },
+    },
+    { collection: 'post-data' }
+);
+PostDataSchema.index(
+    {
+        title: 'text',
+        description: 'text',
+    },
+    {
+        name: 'main',
+        weights: {
+            title: 5,
+            description: 10,
+        },
+        sparse: true,
+    }
+);
+const PostDataModel = model('post-data', PostDataSchema);
+
+@injectable()
+export class PostDao {
+    connection: MongoConnection;
+    constructor(@inject('MongoConnection') connection: MongoConnection) {
+        this.connection = connection;
     }
 
-    public async connect(): Promise<any> {
-        await super.connect();
-        if (!this.repository) {
-            this.repository = this.orm.em.getRepository(PostData);
-        }
+    async upsert(entity: PostData | IPostData): Promise<void> {
+        const val = PostDataModel.findOneAndUpdate({ directURL: entity.directURL }, entity, {
+            new: true,
+            upsert: true,
+        }).catch((err) => {
+            console.log(err, val, entity);
+        });
+        await val;
     }
 
-    async upsert(post: PostData | IPostData): Promise<void> {
-        const existing: DbProxy = await this.repository.findOne({ directURL: post.directURL });
-        if (existing != null) {
-            console.log('Existing', JSON.stringify(existing));
-            console.log('Incomming', JSON.stringify(post));
-            existing.update(post);
-            this.repository.persist(existing);
-        } else {
-            this.repository.persist(post);
-        }
+    async insert(entity: PostData | IPostData): Promise<void> {
+        entity._id = new mongoose.Types.ObjectId();
+        const dbo = new PostDataModel(entity);
+        dbo.save(function (err) {
+            if (err) {
+                console.error(err);
+            }
+            //we probably need to update the scrape reference
+            const request = new ScrapeDataModel(entity.request);
+            request.save();
+            dbo.save();
+        });
     }
-    async flush() {
-        this.repository.flush();
+    async update(entity: PostData): Promise<void> {
+        await PostDataModel.findOneAndUpdate({ directURL: entity.directURL }, entity).exec();
     }
+
     /**
      * Primary data input from scrapers/transformers
      * @param input
@@ -46,8 +94,16 @@ export class PostDao extends BaseDao {
      * Primary Search interface for the Primary UI
      * @param searchQuery
      */
-    async searchStoredData(searchQuery: IPostDataSearchRequest): Promise<IPostData[]> {
-        throw new Error('Method not implemented.');
+    async searchStoredData(searchQuery: IPostDataSearchRequest): Promise<PostData[]> {
+        return PostDataModel.find({ $text: { $search: searchQuery.keywords } }, { score: { $meta: 'textScore' } })
+            .sort({
+                score: { $meta: 'textScore' },
+            })
+            .populate('request');
+    }
+
+    async getRequestData(requestId: any) {
+        return PostDataModel.find({ request: new mongoose.Types.ObjectId(requestId) });
     }
 
     /**

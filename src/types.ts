@@ -1,19 +1,16 @@
 //# sourceMappingURL=dist/src/types.js.map
 /* eslint-disable @typescript-eslint/ban-types */
 
+import mongoose, { Schema } from 'mongoose';
+
 /**
  * IPostDataSearchRequest -
  * The job post data primary filter query object
  *
  */
 export interface IPostDataSearchRequest {
-    /** @type {object} Descriptive Search/Query Interface*/
-    keywords: {
-        'must-have': string;
-        'must-not-have': string;
-        'should-have': string;
-        'should-not-have': string;
-    };
+    /** @type {string} mongodb style text search query*/
+    keywords: string;
     /** @type {string} Optional Location Parameter*/
     location?: string;
 }
@@ -47,6 +44,8 @@ export interface IPostDataIndex {
  *
  */
 export interface IPostData {
+    /** @type {mongoose.Types.ObjectId} */
+    _id?: mongoose.Types.ObjectId;
     /** @type {string} */
     directURL: string;
     /**@type {IVendorMetadata} vendor specific metadata associated to a post that may or may not be useful*/
@@ -55,6 +54,8 @@ export interface IPostData {
     indexMetadata?: IPostDataIndex;
     /** @type {Date} */
     captureTime: Date;
+
+    request?: IPostDataScrapeRequest;
 
     /** @type {string} Main label from source*/
     title: string;

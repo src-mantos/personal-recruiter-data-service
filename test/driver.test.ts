@@ -3,9 +3,7 @@ import 'reflect-metadata';
 import * as types from '../src/types';
 import PostData from '../src/entity/PostData';
 import { PostScrapeManager } from '../src/scrape/PostScrapeManager';
-import { DicePostScraper } from '../src/scrape/impl/DicePostScraper';
-import { IndeedPostScraper } from '../src/scrape/impl/IndeedPostScraper';
-import { EntityManager, EntityRepository, MikroORM, RequestContext } from '@mikro-orm/core';
+
 import container from '../src/DIBindings';
 import ScrapeRequest from '../src/entity/ScrapeRequest';
 

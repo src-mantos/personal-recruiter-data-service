@@ -6,45 +6,28 @@ import type {
     IPostDataIndex,
     IPostDataSearchRequest,
 } from '../types';
-import { Entity, Property, PrimaryKey, SerializedPrimaryKey, ManyToOne } from '@mikro-orm/core';
-import { ObjectId } from '@mikro-orm/mongodb';
-import { PropDefaults } from '../mikro-orm.config';
 import ScrapeRequest from './ScrapeRequest';
+import mongoose from 'mongoose';
 
-@Entity()
 export default class PostData implements IPostData {
-    @PrimaryKey()
-    _id: ObjectId;
+    _id: mongoose.Types.ObjectId;
 
-    @SerializedPrimaryKey()
-    id: string;
-
-    @ManyToOne({ entity: () => ScrapeRequest })
     request: ScrapeRequest;
 
-    @Property()
     directURL!: string;
-    @Property()
     vendorMetadata: IVendorMetadata;
-    @Property()
     indexMetadata: IPostDataIndex;
-    @Property()
     captureTime: Date;
 
-    @Property()
     title: string;
-    @Property()
     organization: string;
-    @Property()
     location: string;
-    @Property()
     description: string;
-    @Property()
     salary: string;
-    @Property()
     postedTime: string;
 
     constructor(opts?: IPostData) {
+        // this._id = new mongoose.Types.ObjectId();
         if (opts) {
             this.directURL = opts.directURL;
             this.captureTime = opts.captureTime;

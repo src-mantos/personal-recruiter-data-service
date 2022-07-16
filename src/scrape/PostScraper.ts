@@ -57,7 +57,7 @@ export abstract class PostScraper extends LocalEventing {
         if (this.page == undefined) {
             this.page = await this.createNewPage();
         }
-        console.log('Scrape Init Complete.');
+        console.log(this.vendorDesc + ' Init Complete.');
         return this;
     }
     /**
@@ -138,23 +138,22 @@ export abstract class PostScraper extends LocalEventing {
         }
         /**Reset Run State Data */
         this.runData = [];
-        await this.navigateToPrimarySearch(search);
+        let _runData: PostData[] = [];
 
-        /**
-         * this.vendorDesc
-         * search.pageDepth
-         */
+        await this.navigateToPrimarySearch(search);
         const metric: IRunMetric = {
             vendorDesc: this.vendorDesc,
             numTotal: -1,
             numComplete: 0,
             pageSize: -1,
         };
+
         let indexCt = 0;
         for (let i = 1; i <= search.pageDepth; i++) {
-            const pageIndex: PostData[] = await this.buildDataTree(metric);
+            const pageIndex: PostData[] = await this.buildDataTree(search, metric);
 
-            this.runData = this.runData.concat(pageIndex);
+            _runData = _runData.concat(pageIndex);
+            this.runData = _runData;
             indexCt += pageIndex.length;
 
             if (i < search.pageDepth) {
@@ -165,7 +164,7 @@ export abstract class PostScraper extends LocalEventing {
         search.metrics.push(metric);
         console.log('[Index] ' + indexCt);
         try {
-            await this.fetchPostDataSet(this.runData, metric);
+            await this.fetchPostDataSet(_runData, metric);
         } catch (ex) {
             console.error('Runtime Exception', ex);
         }
@@ -201,7 +200,7 @@ export abstract class PostScraper extends LocalEventing {
             .catch(IgnoreFactory(this.page));
     }
 
-    protected async buildDataTree(metric: IRunMetric): Promise<PostData[]> {
+    protected async buildDataTree(request: ScrapeRequest, metric: IRunMetric): Promise<PostData[]> {
         if (this.page == undefined) {
             throw new ComponentError('Page Object Undefined', '[PostScraper]');
         }
@@ -238,13 +237,15 @@ export abstract class PostScraper extends LocalEventing {
             );
             throw err;
         }
+
         metric.pageSize = linkCt;
         const dataSet: PostData[] = [];
         for (let index = 0; index < linkCt; index++) {
             const link = links.nth(index);
             const linkData = await this.getAttributes(link, this.linkAttributes);
-
             const shell = new PostData();
+
+            shell.request = request;
             shell.indexMetadata = {
                 postIndex: index,
                 pageIndex: this.currentPage,
@@ -298,7 +299,6 @@ export abstract class PostScraper extends LocalEventing {
             }
             const buffer = [];
             buffer.push(page.close());
-            buffer.push(this.postDao.connect());
             await Promise.all(buffer);
             this.postDao.upsert(post);
         }
