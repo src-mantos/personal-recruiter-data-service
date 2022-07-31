@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import http from 'http';
-import express from 'express';
-import { Request, Response } from 'express';
+import express, { Request, Response } from 'express';
 import Router from 'express-promise-router';
 import { check, param, validationResult, CustomValidator } from 'express-validator';
 
@@ -72,16 +71,35 @@ scrape.get(
         res.status(400);
     }
 );
-scrape.get('/active', async (_req: Request, res: Response) => {
+scrape.get('/status', async (_req: Request, res: Response) => {
     try {
-        res.json(manager.activeRequest);
+        res.json(manager.getQueueStatus());
     } catch (ex) {
         console.error(ex);
         res.status(500);
     }
     res.status(404);
 });
-scrape.get('/run', async (_req: Request, res: Response) => {
+scrape.get('/active', async (_req: Request, res: Response) => {
+    // try {
+    //     res.json(manager.activeRequest);
+    // } catch (ex) {
+    //     console.error(ex);
+    //     res.status(500);
+    // }
+    res.status(404);
+});
+scrape.get('/isRunning', async (_req: Request, res: Response) => {
+    try {
+        console.log(manager.isRunning());
+        res.json(manager.isRunning());
+    } catch (ex) {
+        console.error(ex);
+        res.status(500);
+    }
+    res.status(404);
+});
+scrape.patch('/run', async (_req: Request, res: Response) => {
     try {
         if (manager.workQueue.length > 0) {
             manager.runPromiseQueue();
@@ -93,8 +111,8 @@ scrape.get('/run', async (_req: Request, res: Response) => {
     }
     res.status(404);
 });
-
-scrape.get('/:uuid', async (req: Request, res: Response) => {
+/** if we want to keep, will need to put under the post/data route */
+post.get('/:uuid', async (req: Request, res: Response) => {
     try {
         const data = await scrapeDao.findRequest(req.params.uuid);
         if (data) {
@@ -106,6 +124,22 @@ scrape.get('/:uuid', async (req: Request, res: Response) => {
         } else {
             res.json(data);
         }
+    } catch (ex) {
+        console.error(ex);
+        res.status(500);
+    }
+    res.status(404);
+});
+
+scrape.delete('/:uuid', async (req: Request, res: Response) => {
+    try {
+        const data = req.params.uuid;
+        let success = false;
+        if (data) {
+            success = manager.removeFromQueue(data);
+        }
+        res.status(200);
+        res.json([success]);
     } catch (ex) {
         console.error(ex);
         res.status(500);

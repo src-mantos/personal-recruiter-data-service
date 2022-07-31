@@ -6,6 +6,11 @@ import { PostDao } from '../dao/PostDao';
 import { ScrapeDao } from '../dao/ScrapeDao';
 import ScrapeRequest from '../entity/ScrapeRequest';
 import mongoose from 'mongoose';
+
+interface DescriptiveFunction {
+    run: { (): Promise<any> };
+    spec: IPostDataScrapeRequest;
+}
 /**
  * PostScrapeManager -
  * The primary driver for orchestrating the collection of scrape posting data
@@ -19,7 +24,7 @@ export class PostScrapeManager {
     requestData: IPostData[][];
     scrapeDao: ScrapeDao;
     activeRequest: ScrapeRequest;
-    workQueue: { (): Promise<any> }[];
+    workQueue: DescriptiveFunction[];
 
     constructor(@injectAll('PostScraper') scrapeInterfaces: PostScraper[], @inject('ScrapeDao') scrapeDao: ScrapeDao) {
         this.interfaces = scrapeInterfaces;
@@ -45,8 +50,11 @@ export class PostScrapeManager {
 
     queueRequest(searchQuery: IPostDataScrapeRequest): string {
         const req = new ScrapeRequest(searchQuery);
-        this.workQueue.push(async () => {
-            await this.processQueue(req);
+        this.workQueue.push({
+            run: async () => {
+                await this.processQueue(req);
+            },
+            spec: req,
         });
         return req.uuid;
     }
@@ -54,7 +62,7 @@ export class PostScrapeManager {
     dequeueRequest(): { (): Promise<any> } {
         const next = this.workQueue.shift();
         if (next != undefined) {
-            return next;
+            return next.run;
         }
         return async () => {
             Promise.resolve('Queue Complete');
@@ -69,6 +77,39 @@ export class PostScrapeManager {
                 break;
             }
         }
+    }
+
+    getQueueStatus(): any {
+        const result = [];
+        if (this.activeRequest) {
+            result.push(this.activeRequest);
+        }
+        for (const task of this.workQueue) {
+            result.push(task.spec);
+        }
+
+        return result;
+    }
+
+    removeFromQueue(uuid: string): boolean {
+        let ret = false;
+        for (const i in this.workQueue) {
+            const { run, spec } = this.workQueue[i];
+            if (spec.uuid == uuid) {
+                ret = true;
+                this.workQueue.splice(parseInt(i), 1);
+                break;
+            }
+        }
+        return ret;
+    }
+
+    isRunning(): boolean {
+        return this.activeRequest == undefined ? false : !this.activeRequest.complete;
+    }
+
+    getRequestMetrics(): IRunMetric[] {
+        return this.activeRequest.metrics;
     }
 
     private async processQueue(query: ScrapeRequest): Promise<void> {
@@ -93,6 +134,7 @@ export class PostScrapeManager {
     }
 
     /**
+     * @Deprecated
      * Takes in a search parameter to be processed by multiple interfaces.  <br/>
      * The actual scraping will be long running process and we want to provide an identifier so that the process can be referenced later.
      * @param searchQuery
@@ -127,13 +169,5 @@ export class PostScrapeManager {
         });
 
         return searchQuery.uuid;
-    }
-
-    isRunning(): boolean {
-        return this.activeRequest && !this.activeRequest.complete;
-    }
-
-    getRequestMetrics(): IRunMetric[] {
-        return this.activeRequest.metrics;
     }
 }
