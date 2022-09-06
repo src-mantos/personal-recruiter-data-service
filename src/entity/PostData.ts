@@ -1,11 +1,5 @@
 //# sourceMappingURL=dist/entity/PostData.js.map
-import type {
-    IPostDataScrapeRequest,
-    IPostData,
-    IVendorMetadata,
-    IPostDataIndex,
-    IPostDataSearchRequest,
-} from '../types';
+import type { IPostDataSearchRequest, IPostData, IVendorMetadata, IPostDataIndex, IPostDataScrapeRequest } from '..';
 import ScrapeRequest from './ScrapeRequest';
 import mongoose from 'mongoose';
 

@@ -9,7 +9,7 @@ import container from './DIBindings';
 
 import ScrapeRequest from './entity/ScrapeRequest';
 import PostData from './entity/PostData';
-import { IPostDataScrapeRequest, IPostDataSearchRequest } from './types';
+import { IPostDataScrapeRequest, IPostDataSearchRequest } from '.';
 import { PostDao } from './dao/PostDao';
 import { ScrapeDao } from './dao/ScrapeDao';
 import { MongoConnection } from './dao/MongoConnection';

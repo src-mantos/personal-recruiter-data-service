@@ -1,5 +1,5 @@
 //# sourceMappingURL=dist/src/scrape/PostScraper.js.map
-import { ComponentError, NavigationError, IPostDataScrapeRequest, IPostData, IRunMetric } from '../types';
+import { ComponentError, NavigationError, IPostDataScrapeRequest, IPostData, IRunMetric } from '..';
 import { chromium, Browser, Page, Locator } from 'playwright';
 import { LocalEventing } from './LocalEventing';
 import path from 'path';
@@ -71,6 +71,7 @@ export abstract class PostScraper extends LocalEventing {
         }
 
         const page = await this.browser.newPage();
+        page.setDefaultNavigationTimeout(1000 * 60 * 3)
         await page.route('/**', (route, request) => {
             // document, script, texttrack, xhr, fetch, eventsource, websocket
             if (['stylesheet', 'image', 'media', 'font', 'manifest', 'other'].indexOf(request.resourceType())) {

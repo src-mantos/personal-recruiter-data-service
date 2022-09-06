@@ -1,5 +1,5 @@
 //# sourceMappingURL=dist/test/dao/dao-integration.test.js.map
-import * as types from '../../src/types';
+import * as types from '../../src';
 import PostData from '../../src/entity/PostData';
 import { IndeedPostScraper } from '../../src/scrape/impl/IndeedPostScraper';
 import container from '../../src/DIBindings';

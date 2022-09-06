@@ -1,5 +1,5 @@
 //# sourceMappingURL=dist/src/entity/ScrapeRequest.js.map
-import type { IPostData, IPostDataScrapeRequest, IRunState, IRunMetric } from '../types';
+import type { IPostData, IPostDataScrapeRequest, IRunState, IRunMetric } from '..';
 import mongoose from 'mongoose';
 import { v4 } from 'uuid';
 
@@ -34,4 +34,5 @@ export default class ScrapeRequest implements ScrapeSchema {
             this.pageDepth = opts.pageDepth;
         }
     }
+    keywords: string;
 }

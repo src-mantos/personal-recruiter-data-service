@@ -1,5 +1,5 @@
 import mongoose, { Schema, model, Model, connect, Types } from 'mongoose';
-import { IPostData, IVendorMetadata, IPostDataIndex, IRunMetric, IPostDataSearchRequest } from '../types';
+import { IPostData, IVendorMetadata, IPostDataIndex, IRunMetric, IPostDataSearchRequest } from '..';
 import { injectAll, singleton, inject } from 'tsyringe';
 import PostData from '../entity/PostData';
 

@@ -1,5 +1,5 @@
 //# sourceMappingURL=dist/src/dao/PostDao.js.map
-import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest } from '../types';
+import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest } from '..';
 import PostData from '../entity/PostData';
 import { MongoConnection } from './MongoConnection';
 import mongoose, { Schema, model, Model, connect, Types } from 'mongoose';

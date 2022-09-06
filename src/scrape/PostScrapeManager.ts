@@ -1,6 +1,6 @@
 //# sourceMappingURL=dist/src/scrape/PostScrapeManager.js.map
 import { PostScraper } from './PostScraper';
-import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest, IRunMetric } from '../types';
+import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest, IRunMetric } from '..';
 import { injectAll, singleton, inject } from 'tsyringe';
 import { PostDao } from '../dao/PostDao';
 import { ScrapeDao } from '../dao/ScrapeDao';

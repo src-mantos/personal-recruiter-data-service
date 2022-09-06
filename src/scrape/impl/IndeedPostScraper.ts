@@ -1,5 +1,5 @@
 //# sourceMappingURL=dist/src/scrape/impl/IndeedPostScraper.js.map
-import type { IPostDataScrapeRequest, IPostData } from '../../types';
+import type { IPostDataScrapeRequest, IPostData } from '../..';
 import PostData from '../../entity/PostData';
 import { PostScraper } from '../PostScraper';
 import { FrameLocator, Locator, Page } from 'playwright';

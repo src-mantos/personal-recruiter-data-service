@@ -1,6 +1,6 @@
 //# sourceMappingURL=dist/test/scrape/driver.test.js.map
 import 'reflect-metadata';
-import * as types from '../src/types';
+import * as types from '../src';
 import PostData from '../src/entity/PostData';
 import { PostScrapeManager } from '../src/scrape/PostScrapeManager';
 
@@ -13,7 +13,7 @@ import ScrapeRequest from '../src/entity/ScrapeRequest';
  */
 
 //This flag should be stored as run configuration
-jest.setTimeout(1000 * 60 * 1);
+jest.setTimeout(1000 * 60 * 10);
 
 const simpleSearch: ScrapeRequest = new ScrapeRequest({
     keyword: 'full stack engineer',

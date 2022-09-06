@@ -3,7 +3,7 @@ import { MongoConnection } from './MongoConnection';
 import mongoose, { Schema, model, Model, connect, Types } from 'mongoose';
 import { inject, injectable } from 'tsyringe';
 
-import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest } from '../types';
+import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest } from '..';
 
 import ScrapeRequest from '../entity/ScrapeRequest';
 import type { ScrapeSchema } from '../entity/ScrapeRequest';

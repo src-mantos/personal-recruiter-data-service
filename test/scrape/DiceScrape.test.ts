@@ -1,5 +1,5 @@
 //# sourceMappingURL=dist/test/scrape/DiceScrape.test.js.map
-import * as types from '../../src/types';
+import * as types from '../../src';
 import PostData from '../../src/entity/PostData';
 import { DicePostScraper } from '../../src/scrape/impl/DicePostScraper';
 import container from '../../src/DIBindings';

@@ -1,6 +1,6 @@
 //# sourceMappingURL=dist/test/scrape/IndeedScrape.test.js.map
 import { IndeedPostScraper } from '../../src/scrape/impl/IndeedPostScraper';
-import * as types from '../../src/types';
+import * as types from '../../src';
 import container from '../../src/DIBindings';
 import PostData from '../../src/entity/PostData';
 import ScrapeRequest from '../../src/entity/ScrapeRequest';

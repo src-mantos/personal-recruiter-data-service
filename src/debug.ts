@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import * as types from '../src/types';
+import * as types from '.';
 import PostData from '../src/entity/PostData';
 import { PostScrapeManager } from '../src/scrape/PostScrapeManager';
 

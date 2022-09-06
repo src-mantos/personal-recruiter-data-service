@@ -1,5 +1,5 @@
 //# sourceMappingURL=dist/src/entity/SearchRequest.js.map
-import type { IPostDataSearchRequest } from '../types';
+import type { IPostDataSearchRequest } from '..';
 import { v4 } from 'uuid';
 import mongoose from 'mongoose';
 

@@ -6,7 +6,7 @@ import { PostScrapeManager } from '../../src/scrape/PostScrapeManager';
 import container from '../../src/DIBindings';
 import ScrapeRequest from '../../src/entity/ScrapeRequest';
 import { ScrapeDao } from '../../src/dao/ScrapeDao';
-import { IRunMetric } from '../../src/types';
+import { IRunMetric } from '../../src';
 
 //This flag should be stored as run configuration
 jest.setTimeout(1000 * 60 * 1);
