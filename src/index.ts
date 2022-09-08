@@ -169,12 +169,12 @@ export class ComponentError implements Error {
     }
 }
 /**
+ * Used to report navigation specific exceptions...
  * @category Errors
  * @group error
  */
-export class NavigationError extends ComponentError {
+export class NavigationError extends ComponentError { }
 
-}
 /** Not Used, i just wanted to have a reference */
 function aspectAnnotationExample (retryCount = 3) {
     return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {

@@ -46,7 +46,7 @@ export abstract class PostScraper {
      */
     public async init (): Promise<PostScraper> {
         if (this.browser === undefined) {
-            this.browser = await chromium.launch();
+            this.browser = await chromium.launch({ headless: this.vendorDesc !== 'INDEED' });
         }
         if (this.page === undefined) {
             this.page = await this.createNewPage();

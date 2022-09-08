@@ -24,7 +24,7 @@ console.log('Starting!!');
     };
 
     const instance = container.resolve(PostScrapeManager);
-    await instance._ready;
+    await instance.initialize();
 
     const uuid1 = instance.queueRequest({
         keyword: 'full stack engineer',

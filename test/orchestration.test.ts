@@ -22,22 +22,22 @@ it('will scrape some data and store it', async () => {
     };
 
     const instance = container.resolve(PostScrapeManager);
-    await instance._ready;
-    const searchUuid = instance.processRequest(simpleSearch);
-    setInterval(() => {
-        console.log('************************************');
-        console.log(JSON.stringify(instance.getRequestMetrics()));
-        console.log('************************************');
-    }, 60000);
+    // await instance._ready;
+    // const searchUuid = instance.processRequest(simpleSearch);
+    // setInterval(() => {
+    //     console.log('************************************');
+    //     console.log(JSON.stringify(instance.getRequestMetrics()));
+    //     console.log('************************************');
+    // }, 60000);
 
-    console.log(
-        JSON.stringify({
-            simpleSearch,
-            searchUuid
-        })
-    );
-    await instance._runComplete;
-    await instance.destruct();
-    const conn = container.resolve(MongoConnection);
-    await conn.disconnect();
+    // console.log(
+    //     JSON.stringify({
+    //         simpleSearch,
+    //         searchUuid
+    //     })
+    // );
+    // await instance._runComplete;
+    // await instance.destruct();
+    // const conn = container.resolve(MongoConnection);
+    // await conn.disconnect();
 });

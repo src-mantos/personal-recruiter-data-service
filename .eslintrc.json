@@ -22,6 +22,8 @@
       "@typescript-eslint/no-empty-function": ["warn"],
 
       "no-use-before-define":"off",
-      "lines-between-class-members": ["error", "always", { "exceptAfterSingleLine": true }]
+      "lines-between-class-members": ["error", "always", { "exceptAfterSingleLine": true }],
+
+      "@typescript-eslint/no-explicit-any": "warn"
     }
 }

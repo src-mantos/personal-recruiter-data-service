@@ -1,5 +1,5 @@
-import mongoose, { Schema, model, Model, connect, Types, Mongoose } from 'mongoose';
-import { IPostData, IVendorMetadata, IPostDataIndex, IRunMetric, ISearchQuery } from '..';
+import mongoose, { Mongoose } from 'mongoose';
+import { ComponentError } from '..';
 import { injectAll, singleton, inject } from 'tsyringe';
 import PostData from '../entity/PostData';
 
@@ -22,7 +22,9 @@ export class MongoConnection {
     }
 
     init () {
-        mongoose.connection.on('error', console.log);
+        mongoose.connection.on('error', (err) => {
+            console.error(err);
+        });
         mongoose.connection.on('disconnected', console.log);
         mongoose.connection.on('connected', this.setConnectedListener(true));
         mongoose.connection.on('open', this.setConnectedListener(true));
@@ -31,12 +33,20 @@ export class MongoConnection {
         mongoose.connection.once('open', console.log);
     }
 
-    async connect (): Promise<void> {
-        this.conn = await mongoose.connect(this.clientUrl, {
+    async connect (onConnected?:{():Promise<void>}): Promise<void> {
+        const connectionOpts = {
             user: 'root',
             pass: 'example',
             dbName: 'WIP'
-        });
+        };
+        if (this.conn !== undefined) {
+            await this.conn.connect(this.clientUrl, connectionOpts);
+        } else {
+            this.conn = await mongoose.connect(this.clientUrl, connectionOpts);
+        }
+        if (onConnected !== undefined) {
+            await onConnected();
+        }
     }
 
     isConnected (): boolean {

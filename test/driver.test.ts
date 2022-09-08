@@ -1,4 +1,4 @@
-// # sourceMappingURL=dist/test/scrape/driver.test.js.map
+/* eslint-disable no-undef */
 import 'reflect-metadata';
 import * as types from '../src';
 import PostData from '../src/entity/PostData';
@@ -22,16 +22,19 @@ const simpleSearch: ScrapeRequest = new ScrapeRequest({
 });
 
 it('will Check the consolidation refactor', async () => {
+    // const instance = container.resolve(PostScrapeManager);
+    // await instance._ready;
+    // const searchUuid = instance.processRequest(simpleSearch);
     const instance = container.resolve(PostScrapeManager);
-    await instance._ready;
-    const searchUuid = instance.processRequest(simpleSearch);
+    await instance.initialize();
+    const searchUuid = instance.queueRequest(simpleSearch);
     expect(searchUuid).not.toBeNull();
+    await instance.runPromiseQueue();
     console.log(
         JSON.stringify({
             simpleSearch,
             searchUuid
         })
     );
-    await instance._runComplete;
     await instance.destruct();
 });

@@ -1,4 +1,4 @@
-// # sourceMappingURL=dist/test/scrape/driver.test.js.map
+/* eslint-disable no-undef */
 import 'reflect-metadata';
 import PostData from '../../src/entity/PostData';
 import { PostScrapeManager } from '../../src/scrape/PostScrapeManager';

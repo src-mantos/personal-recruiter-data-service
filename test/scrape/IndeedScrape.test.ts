@@ -1,4 +1,4 @@
-// # sourceMappingURL=dist/test/scrape/IndeedScrape.test.js.map
+/* eslint-disable no-undef */
 import { IndeedPostScraper } from '../../src/scrape/impl/IndeedPostScraper';
 import * as types from '../../src';
 import container from '../../src/DIBindings';

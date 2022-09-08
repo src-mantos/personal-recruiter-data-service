@@ -8,7 +8,7 @@ import { MongoConnection } from './dao/MongoConnection';
 
 container.register<DicePostScraper>('PostScraper', { useClass: DicePostScraper });
 
-// container.register<IndeedPostScraper>('PostScraper', { useClass: IndeedPostScraper });
+container.register<IndeedPostScraper>('PostScraper', { useClass: IndeedPostScraper });
 
 container.register<PostDao>('PostDao', { useClass: PostDao });
 container.register<ScrapeDao>('ScrapeDao', { useClass: ScrapeDao });
