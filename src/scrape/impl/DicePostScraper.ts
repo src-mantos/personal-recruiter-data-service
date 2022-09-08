@@ -1,14 +1,13 @@
-//# sourceMappingURL=dist/src/scrape/impl/DicePostScraper.js.map
-import type { IPostDataScrapeRequest, IPostData } from '../..';
+import type { IScrapeRequest } from '../..';
 import PostData from '../../entity/PostData';
 import { PostScraper } from '../PostScraper';
-import { FrameLocator, Locator, Page } from 'playwright';
+import { Page } from 'playwright';
 import { inject, injectable } from 'tsyringe';
 import { PostDao } from '../../dao/PostDao';
 
 @injectable()
 export class DicePostScraper extends PostScraper {
-    constructor(
+    constructor (
         @inject('scrape_template_vars') variables: string,
         @inject('scrape_dice_url_template') urlTemplate: string,
         @inject('PostDao') postDao: PostDao
@@ -21,7 +20,7 @@ export class DicePostScraper extends PostScraper {
         this.vendorDesc = 'DICE';
     }
 
-    async scrapePostData(post: PostData, page: Page): Promise<PostData> {
+    async scrapePostData (post: PostData, page: Page): Promise<PostData> {
         const listInfo = await page.locator('.row.job-info .iconsiblings').allInnerTexts();
 
         const title = await page.locator('.jobTitle').allInnerTexts();
@@ -31,19 +30,19 @@ export class DicePostScraper extends PostScraper {
         const detail = await page.locator('#jobdescSec').allInnerTexts();
 
         post.vendorMetadata.rawdata = {
-            listInfo: listInfo,
-            title: title,
-            org: org,
-            location: location,
-            postDate: postDate,
-            detail: detail,
+            listInfo,
+            title,
+            org,
+            location,
+            postDate,
+            detail
         };
 
         return post;
     }
 
-    async nextPage(search: IPostDataScrapeRequest): Promise<void> {
-        if (this.page == undefined) {
+    async nextPage (search: IScrapeRequest): Promise<void> {
+        if (this.page === undefined) {
             throw new Error('Scrape Browser must be initialized and ready.');
         }
 
@@ -51,7 +50,7 @@ export class DicePostScraper extends PostScraper {
         return this.navigateToPrimarySearch(search);
     }
 
-    protected transform(post: PostData) {
+    protected transform (post: PostData) {
         const rawData = post.vendorMetadata.rawdata;
         // const regex = "[s|S]alary[:\-\s]*\$?([\d,\.])+[:\-\s\$]*([\d,\.])+"
         post.title = rawData.title.join(' ');

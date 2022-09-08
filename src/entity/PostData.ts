@@ -1,8 +1,10 @@
-//# sourceMappingURL=dist/entity/PostData.js.map
-import type { IPostDataSearchRequest, IPostData, IVendorMetadata, IPostDataIndex, IPostDataScrapeRequest } from '..';
+import type { IPostData, IVendorMetadata, IPostDataIndex } from '..';
 import ScrapeRequest from './ScrapeRequest';
 import mongoose from 'mongoose';
 
+/**
+ * {@inheritDoc IPostData}
+ */
 export default class PostData implements IPostData {
     _id: mongoose.Types.ObjectId;
 
@@ -20,7 +22,7 @@ export default class PostData implements IPostData {
     salary: string;
     postedTime: string;
 
-    constructor(opts?: IPostData) {
+    constructor (opts?: IPostData) {
         // this._id = new mongoose.Types.ObjectId();
         if (opts) {
             this.directURL = opts.directURL;
@@ -37,21 +39,21 @@ export default class PostData implements IPostData {
             this.captureTime = new Date();
             this.vendorMetadata = {
                 metadata: {},
-                rawdata: {},
+                rawdata: {}
             };
             this.indexMetadata = {
                 pageIndex: 0,
                 pageSize: 0,
                 postIndex: 0,
-                completed: false,
+                completed: false
             };
         }
     }
 
-    public update(newValue: IPostData): boolean {
+    public update (newValue: IPostData): boolean {
         if (this.directURL === newValue.directURL) {
             for (const key in newValue) {
-                (<any>this)[key] = (<any>newValue)[key];
+                (<any> this)[key] = (<any>newValue)[key];
             }
             return true;
         } else {

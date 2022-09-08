@@ -12,6 +12,4 @@ the [Playwright](https://playwright.dev/docs/cli#generate-code) library was chos
 
 this will open a chromium browser and playwright script generator.
 
-
-# References
-- [ref](https://link.to.attribute)
+"typedoc-plugin-markdown": "3.11.14",

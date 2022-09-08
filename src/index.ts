@@ -1,22 +1,72 @@
-//# sourceMappingURL=dist/src/types.js.map
-/* eslint-disable @typescript-eslint/ban-types */
-
-import mongoose, { Schema } from 'mongoose';
+/**
+ * Primary Interfaces
+ * @module api
+ */
 
 /**
- * IPostDataSearchRequest -
+ * ISearchQuery -
  * The job post data primary filter query object
- *
+ * @category External
  */
-export interface IPostDataSearchRequest {
-    /** @type {string} mongodb style text search query*/
+export interface ISearchQuery {
+    /**
+     * mongodb style text search query
+     */
     keywords: string;
-    /** @type {string} Optional Location Parameter*/
+    /**
+     * Optional Location Parameter
+     */
     location?: string;
+    /**
+     * place holder for composite filter
+     * @experimental
+     */
+    filters?: ISearchFilter[];
+}
+export interface ISearchFilter {
+    key: string;
+    value: any;
 }
 
 /**
- * IVendorMetadata -
+ * IPostData -
+ * The Standard Job Post Data that will be scraped from underlying services
+ * @category External
+ */
+export interface IPostData {
+    /**
+     * external placeholder for internal ID typing
+     */
+    _id?: any;
+
+    /**
+     * vendor specific metadata associated to a post that may or may not be useful
+     */
+    vendorMetadata?: IVendorMetadata;
+
+    indexMetadata?: IPostDataIndex;
+    captureTime: Date;
+    directURL: string;
+    request?: IScrapeRequest;
+
+    /**
+     * Main label from source
+     */
+    title: string;
+    /**
+     * Job Poster
+     */
+    organization: string;
+    location: string;
+    description: string;
+    salary?: string;
+    /**
+     * captured posting date, will need to parse this into a date object
+     */
+    postedTime: string;
+}
+
+/**
  * standardizing intermediate scrape products
  */
 export interface IVendorMetadata {
@@ -25,107 +75,108 @@ export interface IVendorMetadata {
 }
 
 /**
- * IPostDataIndex -
  * metric data about the job posting
  */
 export interface IPostDataIndex {
-    /** number of posts on a page */
+    /**
+     * number of posts on a page
+     */
     pageSize: number;
-    /** current post index */
+    /**
+     * current post index
+     */
     postIndex: number;
-    /** current page index */
+    /**
+     * current page index
+     */
     pageIndex: number;
-    /** has the post been fully scraped? */
+    /**
+     * has the post been fully scraped?
+     */
     completed: boolean;
 }
-/**
- * IPostData -
- * The Standard Job Post Data that will be scraped from underlying services
- *
- */
-export interface IPostData {
-    /** @type {mongoose.Types.ObjectId} */
-    _id?: mongoose.Types.ObjectId;
-    /** @type {string} */
-    directURL: string;
-    /**@type {IVendorMetadata} vendor specific metadata associated to a post that may or may not be useful*/
-    vendorMetadata?: IVendorMetadata;
-    /** @type {IPostDataIndex} */
-    indexMetadata?: IPostDataIndex;
-    /** @type {Date} */
-    captureTime: Date;
-
-    request?: IPostDataScrapeRequest;
-
-    /** @type {string} Main label from source*/
-    title: string;
-    /** @type {string} Job Poster*/
-    organization: string;
-    /** @type {string} location data*/
-    location: string;
-    /** @type {string} */
-    description: string;
-    /** @type {string} optional salary information*/
-    salary?: string;
-    /** @type {string} captured posting date, will need to parse this into a date object*/
-    postedTime: string;
-}
 
 /**
- * IPostDataScrapeRequest -
+ * IScrapeRequest -
  * The standard job post data request object
- *
+ * @category External
  */
-export interface IPostDataScrapeRequest {
-    /** @type {string} UUID for corrolating search results*/
+export interface IScrapeRequest {
+    /** @type {string} UUID for corrolating search results */
     uuid?: string;
-    /** @type {Date} Search Reuqest time*/
+    /** @type {Date} Search Reuqest time */
     requestTime?: Date;
-    /** @type {string} Primary Search Term*/
+    /** @type {string} Primary Search Term */
     keyword: string;
-    /** @type {string} Optional Location Parameter*/
+    /** @type {string} Optional Location Parameter */
     location?: string;
-    /** @type {number} Number of pages to scrape*/
+    /** @type {number} Number of pages to scrape */
     pageDepth: number;
 }
+
 /**
- * IRunState -
+ * @category Internal
+ */
+export interface IScrapePostDataRequest {
+    // external placeholder for internal ID typing
+    _id: any;
+
+    // has completed
+    complete: boolean;
+    // the raw metrics from individual scrape implementations
+    metrics: IRunMetric[];
+    // Optional scrape result set
+    data?: IPostData[];
+}
+/**
  * communicating metrics out of the scrape/capture interface
+ * @category Internal
  */
 export interface IRunState {
     complete: boolean;
     metrics: IRunMetric[];
 }
+/**
+ * Scrape implementation metrics
+ * @category Internal
+ */
 export interface IRunMetric {
     vendorDesc: string;
     numTotal: number;
     numComplete: number;
     pageSize: number;
 }
+
 /**
+ * Internal Component Error
  * Base Error Class for explicate error handling?
  * Removing `extends` due to inheritance issues
  * https://www.typescriptlang.org/docs/handbook/2/classes.html#inheriting-built-in-types
+ * @category Errors
+ * @group error
  */
 export class ComponentError implements Error {
     name: string;
     message: any;
     stack?: string;
-    constructor(msg: any, name?: string) {
+    constructor (msg: any, name?: string) {
         this.name = !name ? '[CE]' : name;
         this.message = msg;
     }
-    toString(): string {
+
+    toString (): string {
         return this.name + ' ' + JSON.stringify(this.message);
     }
 }
+/**
+ * @category Errors
+ * @group error
+ */
 export class NavigationError extends ComponentError {
-    constructor(input: any) {
-        super(input);
-    }
+
 }
-/**Not Used, i just wanted to have a reference */
-function aspectAnnotationExample(retryCount = 3) {
+/** Not Used, i just wanted to have a reference */
+function aspectAnnotationExample (retryCount = 3) {
     return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
         const originalMethod = descriptor.value;
 

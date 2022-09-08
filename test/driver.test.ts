@@ -1,4 +1,4 @@
-//# sourceMappingURL=dist/test/scrape/driver.test.js.map
+// # sourceMappingURL=dist/test/scrape/driver.test.js.map
 import 'reflect-metadata';
 import * as types from '../src';
 import PostData from '../src/entity/PostData';
@@ -12,13 +12,13 @@ import ScrapeRequest from '../src/entity/ScrapeRequest';
  * Externalize the test for posterity and clarity
  */
 
-//This flag should be stored as run configuration
+// This flag should be stored as run configuration
 jest.setTimeout(1000 * 60 * 10);
 
 const simpleSearch: ScrapeRequest = new ScrapeRequest({
     keyword: 'full stack engineer',
     location: 'Seattle, WA',
-    pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */,
+    pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */
 });
 
 it('will Check the consolidation refactor', async () => {
@@ -28,8 +28,8 @@ it('will Check the consolidation refactor', async () => {
     expect(searchUuid).not.toBeNull();
     console.log(
         JSON.stringify({
-            simpleSearch: simpleSearch,
-            searchUuid: searchUuid,
+            simpleSearch,
+            searchUuid
         })
     );
     await instance._runComplete;

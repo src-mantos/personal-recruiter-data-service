@@ -1,13 +1,12 @@
-//# sourceMappingURL=dist/src/entity/ScrapeRequest.js.map
-import type { IPostData, IPostDataScrapeRequest, IRunState, IRunMetric } from '..';
+import type { IPostData, IScrapeRequest, IScrapePostDataRequest, IRunState, IRunMetric } from '..';
 import mongoose from 'mongoose';
 import { v4 } from 'uuid';
 
-export interface ScrapeSchema extends IPostDataScrapeRequest, IRunState {
-    _id: mongoose.Types.ObjectId;
-    data?: IPostData[];
-}
-export default class ScrapeRequest implements ScrapeSchema {
+/**
+ * {@inheritDoc IScrapeRequest}
+ * {@inheritDoc IScrapePostDataRequest}
+ */
+export default class ScrapeRequest implements IScrapeRequest, IScrapePostDataRequest {
     _id: mongoose.Types.ObjectId;
 
     uuid: string = v4();
@@ -22,7 +21,7 @@ export default class ScrapeRequest implements ScrapeSchema {
     metrics: IRunMetric[];
     data?: IPostData[];
 
-    constructor(opts?: IPostDataScrapeRequest) {
+    constructor (opts?: IScrapeRequest) {
         // this._id = new mongoose.Types.ObjectId();
         this.requestTime = new Date();
         this.complete = false;
@@ -34,5 +33,6 @@ export default class ScrapeRequest implements ScrapeSchema {
             this.pageDepth = opts.pageDepth;
         }
     }
+
     keywords: string;
 }

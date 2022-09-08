@@ -1,6 +1,6 @@
 {
     "root": true,
-    "ignorePatterns":["dist/*"],
+    "ignorePatterns":["dist/*","docs/*"],
     "parser": "@typescript-eslint/parser",
     "plugins": [
       "@typescript-eslint"
@@ -8,12 +8,20 @@
     "extends": [
       "eslint:recommended",
       "plugin:@typescript-eslint/recommended",
-      "prettier"
+      "standard"
     ],
     "rules": {
+      "indent":["warn",4],
+      "semi":["warn","always"],
       "@typescript-eslint/no-explicit-any":0,
-      "@typescript-eslint/no-unused-vars":1,
+
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": "warn",
+
       "no-empty-function": "off",
-      "@typescript-eslint/no-empty-function": ["warn"]
+      "@typescript-eslint/no-empty-function": ["warn"],
+
+      "no-use-before-define":"off",
+      "lines-between-class-members": ["error", "always", { "exceptAfterSingleLine": true }]
     }
 }

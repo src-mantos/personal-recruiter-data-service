@@ -1,15 +1,13 @@
 import 'reflect-metadata';
-import http from 'http';
+
 import express, { Request, Response } from 'express';
 import Router from 'express-promise-router';
-import { check, param, validationResult, CustomValidator } from 'express-validator';
+import { check, validationResult } from 'express-validator';
 
 import { PostScrapeManager } from './scrape/PostScrapeManager';
 import container from './DIBindings';
 
-import ScrapeRequest from './entity/ScrapeRequest';
-import PostData from './entity/PostData';
-import { IPostDataScrapeRequest, IPostDataSearchRequest } from '.';
+import { IScrapeRequest, ISearchQuery } from '.';
 import { PostDao } from './dao/PostDao';
 import { ScrapeDao } from './dao/ScrapeDao';
 import { MongoConnection } from './dao/MongoConnection';
@@ -21,7 +19,7 @@ import { MongoConnection } from './dao/MongoConnection';
  */
 
 const app = express();
-const port = 3000; //process.env.PORT || 3000;
+const port = 3000; // process.env.PORT || 3000;
 process.setMaxListeners(0);
 
 const manager: PostScrapeManager = container.resolve(PostScrapeManager);
@@ -30,7 +28,7 @@ const scrapeDao: ScrapeDao = container.resolve(ScrapeDao);
 const mongo: MongoConnection = container.resolve(MongoConnection);
 
 process.on('SIGINT', () => {
-    //attempt graceful close of the search/scrape
+    // attempt graceful close of the search/scrape
     (async () => {
         console.log('shutting down the db connection');
         await mongo.disconnect();
@@ -44,10 +42,10 @@ const search = Router();
 
 scrape.get(
     '/',
-    /*Sanitization Chain*/
+    /* Sanitization Chain */
     [
         check('keyword', 'keywords are required to search for posts').exists().not().isEmpty(),
-        check('pageDepth').isInt().optional({ checkFalsy: true }).escape(),
+        check('pageDepth').isInt().optional({ checkFalsy: true }).escape()
     ],
     async (req: Request, res: Response) => {
         const errors = validationResult(req);
@@ -55,11 +53,11 @@ scrape.get(
             res.status(400).json(errors);
         }
 
-        const query: IPostDataScrapeRequest = req.query as unknown as IPostDataScrapeRequest;
+        const query: IScrapeRequest = req.query as unknown as IScrapeRequest;
         if (!query.pageDepth) query.pageDepth = 1;
 
         try {
-            //manager.processRequest(query);
+            // manager.processRequest(query);
             const uuid = manager.queueRequest(query);
             query.uuid = uuid;
             res.json(query);
@@ -119,7 +117,7 @@ post.get('/:uuid', async (req: Request, res: Response) => {
             const results = await postDao.getRequestData(data._id);
             res.json({
                 ...data,
-                data: results,
+                data: results
             });
         } else {
             res.json(data);
@@ -156,7 +154,7 @@ search.get(
             res.status(400).json(errors);
         }
 
-        const query: IPostDataSearchRequest = req.query as unknown as IPostDataSearchRequest;
+        const query: ISearchQuery = req.query as unknown as ISearchQuery;
         const results = await postDao.searchStoredData(query);
 
         // const results = await mongo.//search(requstSearch);
@@ -177,7 +175,7 @@ export const init = (async () => {
     app.use('/search', search);
     app.use((_req, res) => res.status(404).json({ message: "These are not the droids you're looking for." }));
 
-    const server = app.listen(port, () => {
+    app.listen(port, () => {
         console.log(`MikroORM express TS example started at http://localhost:${port}`);
         mongo.connect();
     });

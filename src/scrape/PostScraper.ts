@@ -1,33 +1,28 @@
-//# sourceMappingURL=dist/src/scrape/PostScraper.js.map
-import { ComponentError, NavigationError, IPostDataScrapeRequest, IPostData, IRunMetric } from '..';
+// # sourceMappingURL=dist/src/scrape/PostScraper.js.map
+import { ComponentError, NavigationError, IScrapeRequest, IPostData, IRunMetric } from '..';
 import { chromium, Browser, Page, Locator } from 'playwright';
-import { LocalEventing } from './LocalEventing';
 import path from 'path';
 import { inject } from 'tsyringe';
 import PostData from '../entity/PostData';
 import { PostDao } from '../dao/PostDao';
 import ScrapeRequest from '../entity/ScrapeRequest';
 
-function IgnoreFactory(page: Page | undefined) {
-    return function () {
-        /**logging existed here to check failure conditions.
-         * this is only used to swallow timeout errors from playwright
-         */
-    };
+function IgnoreFactory (page: Page | undefined) {
+    return console.warn;
 }
 
 /**
  * (abstract) PostScraper -
  * Polymorphic container for Scrape implementations
  */
-export abstract class PostScraper extends LocalEventing {
-    /** @type {number} related to {@link IPostDataScrapeRequest.pageDepth} */
+export abstract class PostScraper {
+    /** @type {number} related to {@link IScrapeRequest.pageDepth} */
     currentPage: number;
     /** @type {number} */
     elementCount: number;
-    /** @private @type {Browser} Playwright Scrape browser window*/
+    /** @private @type {Browser} Playwright Scrape browser window */
     browser?: Browser;
-    /** @private @type {Page} Playwright Scrape Page*/
+    /** @private @type {Page} Playwright Scrape Page */
     page?: Page;
     templateVars: string[];
     urlTemplate: string;
@@ -37,8 +32,7 @@ export abstract class PostScraper extends LocalEventing {
     runData: PostData[];
     postDao: PostDao;
 
-    constructor(@inject('scrape_template_vars') variables: string, @inject('PostDao') postDao: PostDao) {
-        super();
+    constructor (@inject('scrape_template_vars') variables: string, @inject('PostDao') postDao: PostDao) {
         this.currentPage = 0;
         this.elementCount = 0;
         this.templateVars = variables.split(',');
@@ -50,28 +44,29 @@ export abstract class PostScraper extends LocalEventing {
     /**
      * Initialize the Playwright Browser & Page Objects
      */
-    public async init(): Promise<PostScraper> {
-        if (this.browser == undefined) {
+    public async init (): Promise<PostScraper> {
+        if (this.browser === undefined) {
             this.browser = await chromium.launch();
         }
-        if (this.page == undefined) {
+        if (this.page === undefined) {
             this.page = await this.createNewPage();
         }
         console.log(this.vendorDesc + ' Init Complete.');
         return this;
     }
+
     /**
      * a general purpose page/tab for scrape usage. also initializes networking short cuts.
      * @returns playwright.Page
      */
-    protected async createNewPage(): Promise<Page> {
-        if (this.browser == undefined) {
+    protected async createNewPage (): Promise<Page> {
+        if (this.browser === undefined) {
             const err: ComponentError = new Error('Scrape Browsers need to be defined to generate a new page');
             throw err;
         }
 
         const page = await this.browser.newPage();
-        page.setDefaultNavigationTimeout(1000 * 60 * 3)
+        page.setDefaultNavigationTimeout(1000 * 60 * 3);
         await page.route('/**', (route, request) => {
             // document, script, texttrack, xhr, fetch, eventsource, websocket
             if (['stylesheet', 'image', 'media', 'font', 'manifest', 'other'].indexOf(request.resourceType())) {
@@ -83,30 +78,32 @@ export abstract class PostScraper extends LocalEventing {
 
         return page;
     }
+
     /**
      * Playwright Object Destruction
      */
-    public async clearInstanceData(): Promise<void> {
+    public async clearInstanceData (): Promise<void> {
         this.currentPage = 0;
         this.elementCount = 0;
-        if (this.page != undefined) {
+        if (this.page !== undefined) {
             await this.page.close();
             this.page = undefined;
         }
-        if (this.browser != undefined) {
+        if (this.browser !== undefined) {
             await this.browser.close();
             this.browser = undefined;
         }
     }
 
-    public getPageData(): IPostData[] {
+    public getPageData (): IPostData[] {
         return this.runData;
     }
+
     /**
      * main iteration method for all search scrapers
      * @param search
      */
-    protected abstract nextPage(search?: IPostDataScrapeRequest): Promise<void>;
+    protected abstract nextPage(search?: IScrapeRequest): Promise<void>;
     /**
      * implementation specific direct url scraping capabilities. add to the post data supplied
      * @param post
@@ -118,7 +115,7 @@ export abstract class PostScraper extends LocalEventing {
      * @param post
      * @returns
      */
-    protected decorateMetaData(post: PostData): PostData {
+    protected decorateMetaData (post: PostData): PostData {
         return post;
     }
 
@@ -130,14 +127,14 @@ export abstract class PostScraper extends LocalEventing {
      * - fetch search index <primary failure pt>
      * - track index page data (width first)
      * - fetch post data by local index
-     * @param IPostDataScrapeRequest
+     * @param IScrapeRequest
      */
-    public async run(search: ScrapeRequest): Promise<void> {
+    public async run (search: ScrapeRequest): Promise<void> {
         if (!search.uuid) {
             const err: ComponentError = new Error('No Search UUID to associate results');
             throw err;
         }
-        /**Reset Run State Data */
+        /** Reset Run State Data */
         this.runData = [];
         let _runData: PostData[] = [];
 
@@ -146,7 +143,7 @@ export abstract class PostScraper extends LocalEventing {
             vendorDesc: this.vendorDesc,
             numTotal: -1,
             numComplete: 0,
-            pageSize: -1,
+            pageSize: -1
         };
 
         let indexCt = 0;
@@ -171,8 +168,8 @@ export abstract class PostScraper extends LocalEventing {
         }
     }
 
-    /** Common Abstraction Layer*/
-    protected buildPrimaryURL(search: IPostDataScrapeRequest): string {
+    /** Common Abstraction Layer */
+    protected buildPrimaryURL (search: IScrapeRequest): string {
         let url = '' + this.urlTemplate;
 
         url = url.replace('@{searchTerm}', encodeURIComponent(search.keyword));
@@ -189,36 +186,36 @@ export abstract class PostScraper extends LocalEventing {
         return url;
     }
 
-    protected async navigateToPrimarySearch(search: IPostDataScrapeRequest) {
-        if (this.page == undefined) {
+    protected async navigateToPrimarySearch (search: IScrapeRequest) {
+        if (this.page === undefined) {
             throw new ComponentError('Page Object Undefined', '[PostScraper]');
         }
         const url = this.buildPrimaryURL(search);
         console.log('[Primary URL] ' + url);
-        await this.page.goto(url);
+        await this.page.goto(url, { timeout: 1000 * 60, waitUntil: 'commit' });
         await this.page
             .waitForNavigation({ waitUntil: 'networkidle', timeout: 120000 })
             .catch(IgnoreFactory(this.page));
     }
 
-    protected async buildDataTree(request: ScrapeRequest, metric: IRunMetric): Promise<PostData[]> {
-        if (this.page == undefined) {
+    protected async buildDataTree (request: ScrapeRequest, metric: IRunMetric): Promise<PostData[]> {
+        if (this.page === undefined) {
             throw new ComponentError('Page Object Undefined', '[PostScraper]');
         }
         let retries = 3;
         let linkCt = 0;
-        let links: Locator | undefined = undefined;
-        while (linkCt == 0 && retries > 0) {
+        let links: Locator | undefined;
+        while (linkCt === 0 && retries > 0) {
             try {
                 links = this.page.locator(this.linkSelector);
                 linkCt = await links.count();
             } catch (ex) {
-                //Catching
+                // Catching
                 linkCt = 0;
             }
             retries--;
-            if (linkCt == 0) {
-                //Prettier Math Fail
+            if (linkCt === 0) {
+                // Prettier Math Fail
                 let to = 3000 * Math.random();
                 to += 500;
                 await this.page
@@ -226,11 +223,13 @@ export abstract class PostScraper extends LocalEventing {
                     .catch(IgnoreFactory(this.page));
             }
         }
-        if (linkCt <= 0 || links == undefined) {
+        if (linkCt <= 0 || links === undefined) {
+            const content = await this.page.content();
             console.error(
                 JSON.stringify({
                     url: this.page.url(),
-                    retries: retries,
+                    retries,
+                    content
                 })
             );
             const err: NavigationError = new Error(
@@ -251,18 +250,18 @@ export abstract class PostScraper extends LocalEventing {
                 postIndex: index,
                 pageIndex: this.currentPage,
                 pageSize: linkCt,
-                completed: false,
+                completed: false
             };
 
-            shell.directURL = linkData['href'];
-            if (shell.directURL == undefined) {
+            shell.directURL = linkData.href;
+            if (shell.directURL === undefined) {
                 const err: ComponentError = new Error('No direct URL has been captured');
                 throw err;
             }
 
             shell.vendorMetadata.metadata = {
-                linkData: linkData,
-                vendor: this.vendorDesc,
+                linkData,
+                vendor: this.vendorDesc
             };
 
             this.decorateMetaData(shell);
@@ -271,12 +270,13 @@ export abstract class PostScraper extends LocalEventing {
         }
         return dataSet;
     }
+
     /**
      * Primariy handling fetches let sub-classes handle specifics
      * @param dataSet
      * @returns
      */
-    protected async fetchPostDataSet(dataSet: PostData[], metric: IRunMetric): Promise<PostData[]> {
+    protected async fetchPostDataSet (dataSet: PostData[], metric: IRunMetric): Promise<PostData[]> {
         for (const post of dataSet) {
             const page = await this.createNewPage();
             let complete = post.indexMetadata.completed;
@@ -292,7 +292,7 @@ export abstract class PostScraper extends LocalEventing {
                     complete = true;
                     post.indexMetadata.completed = true;
                     metric.numComplete += 1;
-                    //TODO: update post with status-ing
+                    // TODO: update post with status-ing
                 } catch (ex) {
                     console.error('Failed to retrieve Job Post, reattempting:', JSON.stringify(post));
                     retries--;
@@ -307,7 +307,7 @@ export abstract class PostScraper extends LocalEventing {
     }
 
     /** Utility Methods that would be useful in all scrapers */
-    protected async getAttributes(domItem: Locator, attributes: string[]): Promise<{ [key: string]: any }> {
+    protected async getAttributes (domItem: Locator, attributes: string[]): Promise<{ [key: string]: any }> {
         const retVal: any = {};
         for (const key of attributes) {
             retVal[key] = await domItem.getAttribute(key);
@@ -315,13 +315,13 @@ export abstract class PostScraper extends LocalEventing {
         return retVal;
     }
 
-    protected async captureError() {
-        if (this.page == undefined) {
+    protected async captureError () {
+        if (this.page === undefined) {
             throw new Error('Scrape Browser must be initialized and ready.');
         }
         const errTime = new Date();
         await this.page.screenshot({
-            path: path.join(__dirname, '../../../dist', 'failure-' + errTime.getTime() + '.png'),
+            path: path.join(__dirname, '../../../dist', 'failure-' + errTime.getTime() + '.png')
         });
     }
 }

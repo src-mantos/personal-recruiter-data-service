@@ -1,5 +1,5 @@
-//# sourceMappingURL=dist/src/dao/PostDao.js.map
-import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest } from '..';
+// # sourceMappingURL=dist/src/dao/PostDao.js.map
+import type { IScrapeRequest, IPostData, IVendorMetadata, ISearchQuery } from '..';
 import PostData from '../entity/PostData';
 import { MongoConnection } from './MongoConnection';
 import mongoose, { Schema, model, Model, connect, Types } from 'mongoose';
@@ -13,13 +13,13 @@ const PostDataSchema = new Schema<IPostData>(
         directURL: { type: String, required: true, index: true },
         vendorMetadata: {
             metadata: Schema.Types.Mixed,
-            rawdata: Schema.Types.Mixed,
+            rawdata: Schema.Types.Mixed
         },
         indexMetadata: {
             pageSize: { type: Number, required: true },
             postIndex: { type: Number, required: true },
             pageIndex: { type: Number, required: true },
-            completed: { type: Boolean, required: true },
+            completed: { type: Boolean, required: true }
         },
         captureTime: { type: Date, required: true },
         postedTime: { type: String, required: false },
@@ -28,22 +28,22 @@ const PostDataSchema = new Schema<IPostData>(
         organization: { type: String, required: true, index: true },
         description: { type: String, required: true },
         location: { type: String, required: true, index: true },
-        salary: { type: String, required: false, index: true },
+        salary: { type: String, required: false, index: true }
     },
     { collection: 'post-data' }
 );
 PostDataSchema.index(
     {
         title: 'text',
-        description: 'text',
+        description: 'text'
     },
     {
         name: 'main',
         weights: {
             title: 5,
-            description: 10,
+            description: 10
         },
-        sparse: true,
+        sparse: true
     }
 );
 const PostDataModel = model('post-data', PostDataSchema);
@@ -51,34 +51,35 @@ const PostDataModel = model('post-data', PostDataSchema);
 @injectable()
 export class PostDao {
     connection: MongoConnection;
-    constructor(@inject('MongoConnection') connection: MongoConnection) {
+    constructor (@inject('MongoConnection') connection: MongoConnection) {
         this.connection = connection;
     }
 
-    async upsert(entity: PostData | IPostData): Promise<void> {
+    async upsert (entity: PostData | IPostData): Promise<void> {
         const val = PostDataModel.findOneAndUpdate({ directURL: entity.directURL }, entity, {
             new: true,
-            upsert: true,
+            upsert: true
         }).catch((err) => {
             console.log(err, val, entity);
         });
         await val;
     }
 
-    async insert(entity: PostData | IPostData): Promise<void> {
+    async insert (entity: PostData | IPostData): Promise<void> {
         entity._id = new mongoose.Types.ObjectId();
         const dbo = new PostDataModel(entity);
         dbo.save(function (err) {
             if (err) {
                 console.error(err);
             }
-            //we probably need to update the scrape reference
+            // we probably need to update the scrape reference
             const request = new ScrapeDataModel(entity.request);
             request.save();
             dbo.save();
         });
     }
-    async update(entity: PostData): Promise<void> {
+
+    async update (entity: PostData): Promise<void> {
         await PostDataModel.findOneAndUpdate({ directURL: entity.directURL }, entity).exec();
     }
 
@@ -86,7 +87,7 @@ export class PostDao {
      * Primary data input from scrapers/transformers
      * @param input
      */
-    async importPostData(input: IPostData[]) {
+    async importPostData (input: IPostData[]) {
         throw new Error('Method not implemented.');
     }
 
@@ -94,15 +95,15 @@ export class PostDao {
      * Primary Search interface for the Primary UI
      * @param searchQuery
      */
-    async searchStoredData(searchQuery: IPostDataSearchRequest): Promise<PostData[]> {
+    async searchStoredData (searchQuery: ISearchQuery): Promise<PostData[]> {
         return PostDataModel.find({ $text: { $search: searchQuery.keywords } }, { score: { $meta: 'textScore' } })
             .sort({
-                score: { $meta: 'textScore' },
+                score: { $meta: 'textScore' }
             })
             .populate('request');
     }
 
-    async getRequestData(requestId: any) {
+    async getRequestData (requestId: any) {
         return PostDataModel.find({ request: new mongoose.Types.ObjectId(requestId) });
     }
 
@@ -110,7 +111,7 @@ export class PostDao {
      * basic update post data
      * @param input
      */
-    async updatePostData(input: IPostData): Promise<IPostData> {
+    async updatePostData (input: IPostData): Promise<IPostData> {
         throw new Error('Method not implemented.');
     }
 
@@ -118,7 +119,7 @@ export class PostDao {
      * basic get post daa
      * @param input
      */
-    async getPostData(id: any): Promise<IPostData> {
+    async getPostData (id: any): Promise<IPostData> {
         throw new Error('Method not implemented.');
     }
 }

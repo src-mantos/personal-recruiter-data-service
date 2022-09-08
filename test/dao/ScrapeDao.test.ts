@@ -1,4 +1,4 @@
-//# sourceMappingURL=dist/test/scrape/driver.test.js.map
+// # sourceMappingURL=dist/test/scrape/driver.test.js.map
 import 'reflect-metadata';
 import PostData from '../../src/entity/PostData';
 import { PostScrapeManager } from '../../src/scrape/PostScrapeManager';
@@ -8,13 +8,13 @@ import ScrapeRequest from '../../src/entity/ScrapeRequest';
 import { ScrapeDao } from '../../src/dao/ScrapeDao';
 import { IRunMetric } from '../../src';
 
-//This flag should be stored as run configuration
+// This flag should be stored as run configuration
 jest.setTimeout(1000 * 60 * 1);
 
 const simpleSearch: ScrapeRequest = new ScrapeRequest({
     keyword: 'full stack engineer',
     location: 'Seattle, WA',
-    pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */,
+    pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */
 });
 
 let scrapeDao: ScrapeDao;
@@ -44,14 +44,14 @@ it('pulling scrape requests by UUID', async () => {
 it('create new scrape & update it with metrics', async () => {
     const request = new ScrapeRequest({
         keyword: 'test scrape request',
-        pageDepth: 3,
+        pageDepth: 3
     });
     await scrapeDao.insert(request);
     const metric1: IRunMetric = {
         vendorDesc: 'UNIT',
         numTotal: -1,
         numComplete: -1,
-        pageSize: -1,
+        pageSize: -1
     };
     request.metrics.push(metric1);
     await scrapeDao.upsert(request);

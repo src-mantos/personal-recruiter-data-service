@@ -1,3 +1,4 @@
+#!/usr/bin/env ts-node
 import 'reflect-metadata';
 import * as types from '.';
 import PostData from '../src/entity/PostData';
@@ -14,11 +15,11 @@ import { MongoConnection } from './dao/MongoConnection';
  * this is the primary debug entry point for vs code
  */
 
-async function run() {
-    const simpleSearch: types.IPostDataScrapeRequest = {
+async function run () {
+    const simpleSearch: types.IScrapeRequest = {
         keyword: 'full stack engineer',
-        //location: 'Seattle, WA',
-        pageDepth: 3 /* this includes underling pagination handling and is required minimum for testing any scraper */,
+        // location: 'Seattle, WA',
+        pageDepth: 3 /* this includes underling pagination handling and is required minimum for testing any scraper */
     };
 
     const instance = container.resolve(PostScrapeManager);
@@ -32,8 +33,8 @@ async function run() {
 
     console.log(
         JSON.stringify({
-            simpleSearch: simpleSearch,
-            searchUuid: searchUuid,
+            simpleSearch,
+            searchUuid
         })
     );
     await instance._runComplete;

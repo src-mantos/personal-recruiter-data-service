@@ -17,10 +17,10 @@ import { MongoConnection } from './dao/MongoConnection';
  */
 console.log('Starting!!');
 (async () => {
-    const simpleSearch: types.IPostDataScrapeRequest = {
+    const simpleSearch: types.IScrapeRequest = {
         keyword: 'full stack engineer',
-        //location: 'Seattle, WA',
-        pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */,
+        // location: 'Seattle, WA',
+        pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */
     };
 
     const instance = container.resolve(PostScrapeManager);
@@ -28,13 +28,13 @@ console.log('Starting!!');
 
     const uuid1 = instance.queueRequest({
         keyword: 'full stack engineer',
-        pageDepth: 1,
+        pageDepth: 1
     });
 
     const completion = instance.runPromiseQueue();
     const uuid2 = instance.queueRequest({
         keyword: 'java engineer',
-        pageDepth: 1,
+        pageDepth: 1
     });
 
     setInterval(() => {
@@ -45,8 +45,8 @@ console.log('Starting!!');
 
     await completion;
     console.log({
-        uuid1: uuid1,
-        uuid2: uuid2,
+        uuid1,
+        uuid2
     });
 
     await instance.destruct();

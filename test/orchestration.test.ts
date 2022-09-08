@@ -15,10 +15,10 @@ import { MongoConnection } from '../src/dao/MongoConnection';
  */
 
 it('will scrape some data and store it', async () => {
-    const simpleSearch: types.IPostDataScrapeRequest = {
+    const simpleSearch: types.IScrapeRequest = {
         keyword: 'full stack engineer',
-        //location: 'Seattle, WA',
-        pageDepth: 3 /* this includes underling pagination handling and is required minimum for testing any scraper */,
+        // location: 'Seattle, WA',
+        pageDepth: 3 /* this includes underling pagination handling and is required minimum for testing any scraper */
     };
 
     const instance = container.resolve(PostScrapeManager);
@@ -32,8 +32,8 @@ it('will scrape some data and store it', async () => {
 
     console.log(
         JSON.stringify({
-            simpleSearch: simpleSearch,
-            searchUuid: searchUuid,
+            simpleSearch,
+            searchUuid
         })
     );
     await instance._runComplete;

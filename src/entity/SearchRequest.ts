@@ -1,9 +1,11 @@
-//# sourceMappingURL=dist/src/entity/SearchRequest.js.map
-import type { IPostDataSearchRequest } from '..';
+import type { ISearchQuery } from '..';
 import { v4 } from 'uuid';
 import mongoose from 'mongoose';
 
-export default class SearchRequest implements IPostDataSearchRequest {
+/**
+ * {@inheritDoc ISearchQuery}
+ */
+export default class SearchRequest implements ISearchQuery {
     _id: mongoose.Types.ObjectId;
 
     uuid: string = v4();
@@ -11,7 +13,7 @@ export default class SearchRequest implements IPostDataSearchRequest {
     keywords: string;
     location?: string;
 
-    constructor(opts?: IPostDataSearchRequest) {
+    constructor (opts?: ISearchQuery) {
         this.requestTime = new Date();
         if (opts) {
             this.keywords = opts.keywords;

@@ -1,15 +1,13 @@
-//# sourceMappingURL=dist/src/scrape/impl/IndeedPostScraper.js.map
-import type { IPostDataScrapeRequest, IPostData } from '../..';
 import PostData from '../../entity/PostData';
 import { PostScraper } from '../PostScraper';
-import { FrameLocator, Locator, Page } from 'playwright';
+import { Page } from 'playwright';
 import { inject, injectable } from 'tsyringe';
 import path from 'path';
 import { PostDao } from '../../dao/PostDao';
 
 @injectable()
 export class IndeedPostScraper extends PostScraper {
-    constructor(
+    constructor (
         @inject('scrape_template_vars') variables: string,
         @inject('scrape_ind_url_template') urlTemplate: string,
         @inject('PostDao') postDao: PostDao
@@ -21,7 +19,7 @@ export class IndeedPostScraper extends PostScraper {
         this.vendorDesc = 'INDEED';
     }
 
-    async scrapePostData(post: PostData, page: Page): Promise<PostData> {
+    async scrapePostData (post: PostData, page: Page): Promise<PostData> {
         const title = await page.locator('.jobsearch-JobInfoHeader-title').allInnerTexts();
         const subTitle = await page.locator('.jobsearch-JobInfoHeader-subtitle').allInnerTexts();
         const metadata = await page.locator('.jobsearch-JobMetadataHeader-item').allInnerTexts();
@@ -36,43 +34,44 @@ export class IndeedPostScraper extends PostScraper {
             .allInnerTexts();
 
         post.vendorMetadata.rawdata = {
-            title: title,
-            subTitle: subTitle,
-            metadata: metadata,
-            description: description,
-            sectionItems: sectionItems,
-            qualifications: qualifications,
-            highlights: highlights,
-            aboveDescription: aboveDescription,
-            belowDescription: belowDescription,
-            hireInsights: hireInsights,
+            title,
+            subTitle,
+            metadata,
+            description,
+            sectionItems,
+            qualifications,
+            highlights,
+            aboveDescription,
+            belowDescription,
+            hireInsights
         };
         return post;
     }
-    protected decorateMetaData(post: PostData): PostData {
+
+    protected decorateMetaData (post: PostData): PostData {
         post.directURL = 'https://www.indeed.com' + post.directURL;
         return post;
     }
 
-    async clearPopup() {
-        if (this.page == undefined) {
+    async clearPopup () {
+        if (this.page === undefined) {
             throw new Error('Scrape Browser must be initialized and ready.');
         }
         const found = await this.page.locator('#popover-x').count();
         if (found > 0) {
             await this.page.click('[aria-label="Close"]').catch(() => {
-                //noop as long as the other data is scrape-able
+                // noop as long as the other data is scrape-able
                 if (this.page) {
                     this.page.screenshot({
-                        path: path.join(__dirname, '../../../dist', 'NEXT-failure-' + new Date().getTime() + '.png'),
+                        path: path.join(__dirname, '../../../dist', 'NEXT-failure-' + new Date().getTime() + '.png')
                     });
                 }
             });
         }
     }
 
-    async nextPage(): Promise<void> {
-        if (this.page == undefined) {
+    async nextPage (): Promise<void> {
+        if (this.page === undefined) {
             throw new Error('Scrape Browser must be initialized and ready.');
         }
 
@@ -84,7 +83,7 @@ export class IndeedPostScraper extends PostScraper {
         await this.clearPopup();
     }
 
-    protected transform(post: PostData) {
+    protected transform (post: PostData) {
         const rawData = post.vendorMetadata.rawdata;
         post.title = rawData.title.join(' ');
         post.location = rawData.subTitle.join(' ');

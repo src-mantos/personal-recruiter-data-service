@@ -1,15 +1,15 @@
-//# sourceMappingURL=dist/src/scrape/PostScrapeManager.js.map
+// # sourceMappingURL=dist/src/scrape/PostScrapeManager.js.map
 import { PostScraper } from './PostScraper';
-import type { IPostDataScrapeRequest, IPostData, IVendorMetadata, IPostDataSearchRequest, IRunMetric } from '..';
+import type { IScrapeRequest, IPostData, IRunMetric } from '..';
 import { injectAll, singleton, inject } from 'tsyringe';
-import { PostDao } from '../dao/PostDao';
 import { ScrapeDao } from '../dao/ScrapeDao';
 import ScrapeRequest from '../entity/ScrapeRequest';
 import mongoose from 'mongoose';
+import { MongoConnection } from '../dao/MongoConnection';
 
 interface DescriptiveFunction {
     run: { (): Promise<any> };
-    spec: IPostDataScrapeRequest;
+    spec: IScrapeRequest;
 }
 /**
  * PostScrapeManager -
@@ -25,8 +25,13 @@ export class PostScrapeManager {
     scrapeDao: ScrapeDao;
     activeRequest: ScrapeRequest;
     workQueue: DescriptiveFunction[];
+    connection: MongoConnection;
 
-    constructor(@injectAll('PostScraper') scrapeInterfaces: PostScraper[], @inject('ScrapeDao') scrapeDao: ScrapeDao) {
+    constructor (
+        @injectAll('PostScraper') scrapeInterfaces: PostScraper[],
+        @inject('ScrapeDao') scrapeDao: ScrapeDao,
+        @inject('MongoConnection') connection: MongoConnection
+    ) {
         this.interfaces = scrapeInterfaces;
         this.requestData = [];
         this.workQueue = [];
@@ -35,11 +40,12 @@ export class PostScrapeManager {
             initialized.push(int.init());
         }
         this.scrapeDao = scrapeDao;
-        initialized.push(this.scrapeDao.connection.connect());
+        this.connection = connection;
+        initialized.push(connection.connect());
         this._ready = Promise.all(initialized);
     }
 
-    async destruct(): Promise<void> {
+    async destruct (): Promise<void> {
         const off = [];
         for (const int of this.interfaces) {
             off.push(int.clearInstanceData());
@@ -48,20 +54,20 @@ export class PostScrapeManager {
         await Promise.all(off);
     }
 
-    queueRequest(searchQuery: IPostDataScrapeRequest): string {
+    queueRequest (searchQuery: IScrapeRequest): string {
         const req = new ScrapeRequest(searchQuery);
         this.workQueue.push({
             run: async () => {
                 await this.processQueue(req);
             },
-            spec: req,
+            spec: req
         });
         return req.uuid;
     }
 
-    dequeueRequest(): { (): Promise<any> } {
+    dequeueRequest (): { (): Promise<any> } {
         const next = this.workQueue.shift();
-        if (next != undefined) {
+        if (next !== undefined) {
             return next.run;
         }
         return async () => {
@@ -69,7 +75,7 @@ export class PostScrapeManager {
         };
     }
 
-    async runPromiseQueue(): Promise<void> {
+    async runPromiseQueue (): Promise<void> {
         while (this.workQueue.length >= 1) {
             const result = await this.dequeueRequest()();
             if (result) {
@@ -79,7 +85,7 @@ export class PostScrapeManager {
         }
     }
 
-    getQueueStatus(): any {
+    getQueueStatus (): any {
         const result = [];
         if (this.activeRequest) {
             result.push(this.activeRequest);
@@ -91,11 +97,11 @@ export class PostScrapeManager {
         return result;
     }
 
-    removeFromQueue(uuid: string): boolean {
+    removeFromQueue (uuid: string): boolean {
         let ret = false;
         for (const i in this.workQueue) {
-            const { run, spec } = this.workQueue[i];
-            if (spec.uuid == uuid) {
+            const { spec } = this.workQueue[i];
+            if (spec.uuid === uuid) {
                 ret = true;
                 this.workQueue.splice(parseInt(i), 1);
                 break;
@@ -104,15 +110,15 @@ export class PostScrapeManager {
         return ret;
     }
 
-    isRunning(): boolean {
-        return this.activeRequest == undefined ? false : !this.activeRequest.complete;
+    isRunning (): boolean {
+        return this.activeRequest === undefined ? false : !this.activeRequest.complete;
     }
 
-    getRequestMetrics(): IRunMetric[] {
+    getRequestMetrics (): IRunMetric[] {
         return this.activeRequest.metrics;
     }
 
-    private async processQueue(query: ScrapeRequest): Promise<void> {
+    private async processQueue (query: ScrapeRequest): Promise<void> {
         const completion = [];
         this.activeRequest = query;
         this.scrapeDao.insert(this.activeRequest);
@@ -139,12 +145,16 @@ export class PostScrapeManager {
      * The actual scraping will be long running process and we want to provide an identifier so that the process can be referenced later.
      * @param searchQuery
      */
-    processRequest(searchQuery: IPostDataScrapeRequest): string {
+    processRequest (searchQuery: IScrapeRequest): string {
         const completion = [];
         this.activeRequest = new ScrapeRequest(searchQuery);
         this.activeRequest._id = new mongoose.Types.ObjectId();
 
-        this.scrapeDao.insert(this.activeRequest);
+        if (!this.connection.isConnected()) {
+            this.connection.connect().then(() => { this.scrapeDao.insert(this.activeRequest); });
+        } else {
+            this.scrapeDao.insert(this.activeRequest);
+        }
 
         searchQuery.uuid = this.activeRequest.uuid;
         for (const inter of this.interfaces) {

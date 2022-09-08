@@ -1,17 +1,17 @@
-//# sourceMappingURL=dist/test/scrape/DiceScrape.test.js.map
+// # sourceMappingURL=dist/test/scrape/DiceScrape.test.js.map
 import * as types from '../../src';
 import PostData from '../../src/entity/PostData';
 import { DicePostScraper } from '../../src/scrape/impl/DicePostScraper';
 import container from '../../src/DIBindings';
 import ScrapeRequest from '../../src/entity/ScrapeRequest';
 
-//This flag should be stored as run configuration
+// This flag should be stored as run configuration
 jest.setTimeout(1000 * 60 * 8);
 
-const simpleSearch: types.IPostDataScrapeRequest = {
+const simpleSearch: types.IScrapeRequest = {
     keyword: 'full stack engineer',
     // location: 'Reston, VA',
-    pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */,
+    pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */
 };
 
 const dice: DicePostScraper = container.resolve(DicePostScraper);
