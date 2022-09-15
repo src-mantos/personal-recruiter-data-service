@@ -8,7 +8,7 @@ import { PostDao } from '../dao/PostDao';
 import ScrapeRequest from '../entity/ScrapeRequest';
 
 function IgnoreFactory (page: Page | undefined) {
-    return console.warn;
+    return () => {};
 }
 
 /**
@@ -298,10 +298,9 @@ export abstract class PostScraper {
                     retries--;
                 }
             }
-            const buffer = [];
-            buffer.push(page.close());
-            await Promise.all(buffer);
-            this.postDao.upsert(post);
+
+            await page.close();
+            await this.postDao.upsert(post);
         }
         return dataSet;
     }

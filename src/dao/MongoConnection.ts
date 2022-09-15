@@ -21,7 +21,7 @@ export class MongoConnection {
         };
     }
 
-    init () {
+    protected init () {
         mongoose.connection.on('error', (err) => {
             console.error(err);
         });

@@ -12,6 +12,8 @@ import { PostDao } from './dao/PostDao';
 import { ScrapeDao } from './dao/ScrapeDao';
 import { MongoConnection } from './dao/MongoConnection';
 
+import { spawn } from 'child_process';
+
 /**
  * This is where we want to validate the new additions.
  * the ts-node integration is great for jest integration but debugging is problematic
@@ -19,8 +21,7 @@ import { MongoConnection } from './dao/MongoConnection';
  */
 
 const app = express();
-const port = 3000; // process.env.PORT || 3000;
-process.setMaxListeners(0);
+const port = container.resolve('service_port');// 3000; // process.env.PORT || 3000;
 
 const manager: PostScrapeManager = container.resolve(PostScrapeManager);
 const postDao: PostDao = container.resolve(PostDao);
@@ -30,7 +31,8 @@ const mongo: MongoConnection = container.resolve(MongoConnection);
 process.on('SIGINT', () => {
     // attempt graceful close of the search/scrape
     (async () => {
-        console.log('shutting down the db connection');
+        console.log('shutting down interfaces');
+        await manager.destruct();
         await mongo.disconnect();
     })();
 });

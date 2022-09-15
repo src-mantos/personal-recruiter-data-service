@@ -17,7 +17,9 @@
         "clean": "rm -r dist && rm -r docs",
         "pretty": "npx prettier --check \"src/**/*\"",
         "lint": "eslint .",
-        "lint-fix": "eslint . --fix --quiet"
+        "lint-fix": "eslint . --fix --quiet",
+        "run-scrape": "node -r source-map-support/register ./dist/src/runScrapeProcess.js",
+        "run-ipc": "yarn build &&node -r source-map-support/register ./dist/src/mainRunner.js"
     },
     "devDependencies": {
         "@types/express": "^4.17.13",

@@ -175,12 +175,14 @@ export class PostScrapeManager {
             insertActiveRequest();
         }
 
-        const catchException = (err:any) => {
-            console.warn('Scrape interface Failure!', err);
-        };
+        // const catchException = (err:any) => {
+        //     console.warn('Scrape interface Failure!', err);
+        // };
         for (const inter of this.interfaces) {
             completion.push(
-                inter.run(this.activeRequest).catch(catchException)
+                inter.run(this.activeRequest).catch((err) => {
+                    console.info('Scrape interface Failure!', JSON.stringify(err));
+                })
             );
         }
 
