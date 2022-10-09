@@ -1,7 +1,5 @@
 /* eslint-disable no-undef */
 import 'reflect-metadata';
-import * as types from '../src';
-import PostData from '../src/entity/PostData';
 import { PostScrapeManager } from '../src/scrape/PostScrapeManager';
 
 import container from '../src/DIBindings';
@@ -11,6 +9,13 @@ import ScrapeRequest from '../src/entity/ScrapeRequest';
  * This is where we want to validate the new additions and try new things.
  * Externalize the test for posterity and clarity
  */
+
+process.on('SIGINT', () => {
+    // attempt graceful close of the search/scrape
+    (async () => {
+        console.log('shutting down IPC');
+    })();
+});
 
 // This flag should be stored as run configuration
 jest.setTimeout(1000 * 60 * 10);

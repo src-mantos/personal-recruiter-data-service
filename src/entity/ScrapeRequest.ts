@@ -27,6 +27,9 @@ export default class ScrapeRequest implements IScrapeRequest, IScrapePostDataReq
         this.complete = false;
         this.metrics = [];
         this.pageDepth = 1;
+        if (opts?.uuid !== undefined) {
+            this.uuid = opts.uuid;
+        }
         if (opts) {
             this.keyword = opts.keyword;
             this.location = opts.location;

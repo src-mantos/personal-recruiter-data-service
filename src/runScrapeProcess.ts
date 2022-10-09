@@ -1,6 +1,12 @@
-/* eslint-disable no-undef */
+/**
+ * Fork Scrape Request
+ * @param uuid - process.argv[2]
+ * @param pageDepth - process.argv[3]
+ * @param keywords - process.argv[4]
+ * @param location - process.argv[5]
+ */
 import 'reflect-metadata';
-import { ISearchQuery, IScrapeRequest, IPostData } from '.';
+import { ISearchQuery, IScrapeRequest, IPostData, IPC } from '.';
 
 import { MongoConnection } from './dao/MongoConnection';
 import { PostDao } from './dao/PostDao';
@@ -9,45 +15,36 @@ import container from './DIBindings';
 import ScrapeRequest from './entity/ScrapeRequest';
 import { PostScraper } from './scrape/PostScraper';
 
-const pd = parseInt(process.argv[2]);
-/**
- * Scrape Process
- * @param pageDepth - process.argv[2]
- * @param keywords - process.argv[3]
- * @param location - process.argv[4]
- */
-const request:IScrapeRequest = {
-    keyword: process.argv[3],
-    pageDepth: (isNaN(pd)) ? 0 : pd,
-    location: process.argv[4]
-};
+const updateRequestInterval = 1000 * 10;
+const pd = parseInt(process.argv[3]);
 
-/**
- * temproary interface
- */
-export interface IPC<T> {
-    operation: 'userRequest'|'processMetrics'|'error'|'exit',
-    payload: T
-}
+const request:IScrapeRequest = {
+    uuid: process.argv[2],
+    keyword: process.argv[4],
+    pageDepth: (isNaN(pd)) ? 0 : pd,
+    location: process.argv[5]
+};
 
 const sendMessage = (obj:IPC<any>) => {
     if (process && process.send) {
-        process.send(JSON.stringify(obj));
+        process.send(obj);// JSON.stringify(obj));
     } else {
         console.error('Unable to report to parent process.');
     }
 };
 
-const updateRequestInterval = 1000 * 60 * 1.5;
-
+/**
+ * Scrape Process
+ */
 async function run () {
     console.log('starting child process');
     const scrapeRequest: ScrapeRequest = new ScrapeRequest(request);
     sendMessage({
-        operation: 'userRequest',
+        operation: 'requestUpdates',
         payload: scrapeRequest
     });
 
+    /** initialize scrape interfaces */
     const scrapeInit = [];
     const interfaces:PostScraper[] = container.resolveAll('PostScraper');
     for (const inter of interfaces) {
@@ -55,6 +52,7 @@ async function run () {
     }
     await Promise.all(scrapeInit);
 
+    /** acquire database interfaces */
     const connection = container.resolve(MongoConnection);
     const scrapeDao = container.resolve(ScrapeDao);
     if (!connection.isConnected()) {
@@ -62,6 +60,7 @@ async function run () {
     }
     scrapeDao.insert(scrapeRequest);
 
+    /** start scrape */
     const scrapeComp = [];
     for (const inter of interfaces) {
         scrapeComp.push(
@@ -71,22 +70,28 @@ async function run () {
         );
     }
 
+    /** periodic request & metric flush to db */
+    let debounceDbUpdate = 1;
     const timer = setInterval(() => {
         (async () => {
-            console.log('updating active request', JSON.stringify(scrapeRequest));
             sendMessage({
-                operation: 'userRequest',
+                operation: 'requestUpdates',
                 payload: scrapeRequest
             });
-            await scrapeDao.update(scrapeRequest);
+            if (debounceDbUpdate % 9 === 0) {
+                console.log('updating request in DB');
+                await scrapeDao.update(scrapeRequest);
+            }
+            debounceDbUpdate++;
         })();
     }, updateRequestInterval);
 
+    /** wait for run to complete and wrap up the thread */
     await Promise.all(scrapeComp);
     clearInterval(timer);
     scrapeRequest.complete = true;
     sendMessage({
-        operation: 'userRequest',
+        operation: 'requestUpdates',
         payload: scrapeRequest
     });
     await scrapeDao.update(scrapeRequest);

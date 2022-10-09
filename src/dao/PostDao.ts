@@ -1,26 +1,37 @@
-// # sourceMappingURL=dist/src/dao/PostDao.js.map
-import type { IScrapeRequest, IPostData, IVendorMetadata, ISearchQuery } from '..';
+import type { IScrapeRequest, IPostData, IVendorMetadata, ISearchQuery, IPostDataIndex } from '..';
 import PostData from '../entity/PostData';
-import { MongoConnection } from './MongoConnection';
+import { MongoConnection, MongoID, Dao } from './MongoConnection';
 import mongoose, { Schema, model, Model, connect, Types } from 'mongoose';
 import { inject, injectable } from 'tsyringe';
 import { ScrapeDataModel } from './ScrapeDao';
 
+const vendorMetadataSchema = new Schema<IVendorMetadata>({
+    metadata: Schema.Types.Mixed,
+    rawdata: Schema.Types.Mixed
+});
+const IndexMetadataSchema = new Schema<IPostDataIndex>({
+    pageSize: { type: Number, required: true },
+    postIndex: { type: Number, required: true },
+    pageIndex: { type: Number, required: true },
+    completed: { type: Boolean, required: true }
+});
 const PostDataSchema = new Schema<IPostData>(
     {
         _id: Schema.Types.ObjectId,
         request: { type: Schema.Types.ObjectId, ref: 'post-request' },
         directURL: { type: String, required: true, index: true },
-        vendorMetadata: {
-            metadata: Schema.Types.Mixed,
-            rawdata: Schema.Types.Mixed
-        },
-        indexMetadata: {
-            pageSize: { type: Number, required: true },
-            postIndex: { type: Number, required: true },
-            pageIndex: { type: Number, required: true },
-            completed: { type: Boolean, required: true }
-        },
+        vendorMetadata: vendorMetadataSchema,
+        // {
+        //     metadata: Schema.Types.Mixed,
+        //     rawdata: Schema.Types.Mixed
+        // },
+        indexMetadata: IndexMetadataSchema,
+        // {
+        //     pageSize: { type: Number, required: true },
+        //     postIndex: { type: Number, required: true },
+        //     pageIndex: { type: Number, required: true },
+        //     completed: { type: Boolean, required: true }
+        // },
         captureTime: { type: Date, required: true },
         postedTime: { type: String, required: false },
 
@@ -49,7 +60,7 @@ PostDataSchema.index(
 const PostDataModel = model('post-data', PostDataSchema);
 
 @injectable()
-export class PostDao {
+export class PostDao implements Dao<PostData> {
     connection: MongoConnection;
     constructor (@inject('MongoConnection') connection: MongoConnection) {
         this.connection = connection;
@@ -61,6 +72,7 @@ export class PostDao {
             upsert: true
         }).catch((err) => {
             console.log(err, val, entity);
+            this.insert(entity);
         });
         await val;
     }
@@ -103,8 +115,8 @@ export class PostDao {
             .populate('request');
     }
 
-    async getRequestData (requestId: any) {
-        return PostDataModel.find({ request: new mongoose.Types.ObjectId(requestId) });
+    async getRequestData (requestId: MongoID) {
+        return PostDataModel.find({ request: new mongoose.Types.ObjectId(requestId as any) });
     }
 
     /**

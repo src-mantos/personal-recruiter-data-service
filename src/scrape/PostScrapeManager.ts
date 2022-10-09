@@ -11,6 +11,7 @@ interface DescriptiveFunction {
 }
 /**
  * PostScrapeManager -
+ * @deprecated
  * The primary driver for orchestrating the collection of scrape posting data
  * @example
 ```
@@ -36,38 +37,40 @@ export class PostScrapeManager {
      * @param connection
      */
     constructor (
-        @injectAll('PostScraper') scrapeInterfaces: PostScraper[],
-        @inject('ScrapeDao') scrapeDao: ScrapeDao,
-        @inject('MongoConnection') connection: MongoConnection
+        @injectAll('PostScraper') scrapeInterfaces: PostScraper[]
+        // @inject('ScrapeDao') scrapeDao: ScrapeDao,
+        // @inject('MongoConnection') connection: MongoConnection
     ) {
         this.interfaces = scrapeInterfaces;
         this.updateRequestInterval = 1000 * 60 * 1.5;
         this.requestData = [];
         this.workQueue = [];
 
-        this.scrapeDao = scrapeDao;
-        this.connection = connection;
+        // this.scrapeDao = scrapeDao;
+        // this.connection = connection;
     }
 
     initialize ():Promise<any> {
-        const initialized = [];
-        for (const int of this.interfaces) {
-            initialized.push(int.init());
-        }
-        initialized.push(this.connection.connect());
-        return Promise.all(initialized);
+        // const initialized = [];
+        // for (const int of this.interfaces) {
+        //     initialized.push(int.init());
+        // }
+        // initialized.push(this.connection.connect());
+        // return Promise.all(initialized);
+        return Promise.resolve('deprecated');
     }
 
     /**
      * Close all of the open interfaces
      */
     async destruct (): Promise<void> {
-        const off = [];
-        for (const int of this.interfaces) {
-            off.push(int.clearInstanceData());
-        }
-        off.push(this.connection.disconnect());
-        await Promise.all(off);
+        // const off = [];
+        // for (const int of this.interfaces) {
+        //     off.push(int.clearInstanceData());
+        // }
+        // off.push(this.connection.disconnect());
+        // await Promise.all(off);
+        return Promise.resolve();
     }
 
     /**

@@ -1,7 +1,5 @@
 /* eslint-disable no-undef */
 import 'reflect-metadata';
-import PostData from '../../src/entity/PostData';
-import { PostScrapeManager } from '../../src/scrape/PostScrapeManager';
 
 import container from '../../src/DIBindings';
 import ScrapeRequest from '../../src/entity/ScrapeRequest';

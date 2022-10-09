@@ -1,4 +1,4 @@
-import mongoose, { Mongoose } from 'mongoose';
+import mongoose, { Mongoose, ObjectId } from 'mongoose';
 import { ComponentError } from '..';
 import { injectAll, singleton, inject } from 'tsyringe';
 import PostData from '../entity/PostData';
@@ -56,4 +56,12 @@ export class MongoConnection {
     disconnect (): Promise<void> {
         return mongoose.disconnect();
     }
+}
+
+export type MongoID = string | ObjectId;// | ObjectIdLike | number | Buffer | Uint8Array | undefined
+
+export interface Dao<T> {
+    insert(entity:T) :Promise<void>
+    update(entity:T) :Promise<void>
+    upsert(entity:T) :Promise<void>
 }

@@ -1,11 +1,10 @@
 /* eslint-disable no-undef */
 import 'reflect-metadata';
-import { ISearchQuery } from '.';
+import { IPC, ISearchQuery } from '.';
 
 import { spawn, fork } from 'child_process';
 import container from './DIBindings';
 import { MongoConnection } from './dao/MongoConnection';
-import { IPC } from './runScrapeProcess';
 
 process.on('SIGINT', () => {
     // attempt graceful close of the search/scrape

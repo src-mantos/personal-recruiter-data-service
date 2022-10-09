@@ -1,184 +1,73 @@
 import 'reflect-metadata';
 
 import express, { Request, Response } from 'express';
-import Router from 'express-promise-router';
-import { check, validationResult } from 'express-validator';
-
-import { PostScrapeManager } from './scrape/PostScrapeManager';
+import expressJSDocSwagger from 'express-jsdoc-swagger';
 import container from './DIBindings';
 
-import { IScrapeRequest, ISearchQuery } from '.';
-import { PostDao } from './dao/PostDao';
-import { ScrapeDao } from './dao/ScrapeDao';
+import { ScrapePath, ScrapeRouter, DataPath, DataRouter } from './serverRoutes';
 import { MongoConnection } from './dao/MongoConnection';
-
-import { spawn } from 'child_process';
-
 /**
- * This is where we want to validate the new additions.
- * the ts-node integration is great for jest integration but debugging is problematic
- * this is the primary debug entry point for vs code
+ * Main api runner
  */
 
 const app = express();
-const port = container.resolve('service_port');// 3000; // process.env.PORT || 3000;
+const options = {
+    info: {
+        version: '0.1.0',
+        title: 'Personal Recruiter Data Service',
+        license: {
+            name: 'MIT'
+        }
+    },
+    security: {
+        BasicAuth: {
+            type: 'http',
+            scheme: 'basic'
+        }
+    },
+    baseDir: __dirname,
+    // Glob pattern to find your jsdoc files (multiple patterns can be added in an array)
+    filesPattern: ['./*.js', './index.d.ts'],
+    // URL where SwaggerUI will be rendered
+    swaggerUIPath: '/v1/docs',
+    // Expose OpenAPI UI
+    exposeSwaggerUI: true,
+    // Set non-required fields as nullable by default
+    notRequiredAsNullable: false,
+    // multiple option in case you want more that one instance
+    multiple: true
+};
+expressJSDocSwagger(app)(options);
 
-const manager: PostScrapeManager = container.resolve(PostScrapeManager);
-const postDao: PostDao = container.resolve(PostDao);
-const scrapeDao: ScrapeDao = container.resolve(ScrapeDao);
+const port = container.resolve('service_port');
 const mongo: MongoConnection = container.resolve(MongoConnection);
-
-process.on('SIGINT', () => {
-    // attempt graceful close of the search/scrape
-    (async () => {
-        console.log('shutting down interfaces');
-        await manager.destruct();
-        await mongo.disconnect();
-    })();
-});
-
-/** quick and dirty async routing */
-const scrape = Router();
-const post = Router();
-const search = Router();
-
-scrape.get(
-    '/',
-    /* Sanitization Chain */
-    [
-        check('keyword', 'keywords are required to search for posts').exists().not().isEmpty(),
-        check('pageDepth').isInt().optional({ checkFalsy: true }).escape()
-    ],
-    async (req: Request, res: Response) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(400).json(errors);
-        }
-
-        const query: IScrapeRequest = req.query as unknown as IScrapeRequest;
-        if (!query.pageDepth) query.pageDepth = 1;
-
-        try {
-            // manager.processRequest(query);
-            const uuid = manager.queueRequest(query);
-            query.uuid = uuid;
-            res.json(query);
-        } catch (ex) {
-            console.error(ex);
-            res.status(500);
-        }
-
-        res.status(400);
-    }
-);
-scrape.get('/status', async (_req: Request, res: Response) => {
-    try {
-        res.json(manager.getQueueStatus());
-    } catch (ex) {
-        console.error(ex);
-        res.status(500);
-    }
-    res.status(404);
-});
-scrape.get('/active', async (_req: Request, res: Response) => {
-    // try {
-    //     res.json(manager.activeRequest);
-    // } catch (ex) {
-    //     console.error(ex);
-    //     res.status(500);
-    // }
-    res.status(404);
-});
-scrape.get('/isRunning', async (_req: Request, res: Response) => {
-    try {
-        console.log(manager.isRunning());
-        res.json(manager.isRunning());
-    } catch (ex) {
-        console.error(ex);
-        res.status(500);
-    }
-    res.status(404);
-});
-scrape.patch('/run', async (_req: Request, res: Response) => {
-    try {
-        if (manager.workQueue.length > 0) {
-            manager.runPromiseQueue();
-        }
-        res.json(manager.activeRequest);
-    } catch (ex) {
-        console.error(ex);
-        res.status(500);
-    }
-    res.status(404);
-});
-/** if we want to keep, will need to put under the post/data route */
-post.get('/:uuid', async (req: Request, res: Response) => {
-    try {
-        const data = await scrapeDao.findRequest(req.params.uuid);
-        if (data) {
-            const results = await postDao.getRequestData(data._id);
-            res.json({
-                ...data,
-                data: results
-            });
-        } else {
-            res.json(data);
-        }
-    } catch (ex) {
-        console.error(ex);
-        res.status(500);
-    }
-    res.status(404);
-});
-
-scrape.delete('/:uuid', async (req: Request, res: Response) => {
-    try {
-        const data = req.params.uuid;
-        let success = false;
-        if (data) {
-            success = manager.removeFromQueue(data);
-        }
-        res.status(200);
-        res.json([success]);
-    } catch (ex) {
-        console.error(ex);
-        res.status(500);
-    }
-    res.status(404);
-});
-
-search.get(
-    '/',
-    [check('keywords', 'keywords are required to search for posts').exists().not().isEmpty()],
-    async (req: Request, res: Response) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(400).json(errors);
-        }
-
-        const query: ISearchQuery = req.query as unknown as ISearchQuery;
-        const results = await postDao.searchStoredData(query);
-
-        // const results = await mongo.//search(requstSearch);
-        res.json(results);
-    }
-);
+const basePath = '/v1';
+const basicLogger = (req: Request, res: Response, next: {():void}) => {
+    const now = `${Date.now()} - `;
+    console.log(`${Date.now()} - ${req.originalUrl}`);
+    console.log(now + 'req.params', JSON.stringify(req.params));
+    console.log(now + 'req.query', JSON.stringify(req.query));
+    next();
+};
 
 export const init = (async () => {
     app.use(express.json());
-    app.get('/', async (_req, res) => {
-        setTimeout(() => {
-            res.json({ hello: 'world' });
-        }, 1000);
-    });
+    app.use(basicLogger);
 
-    app.use('/scrape', scrape);
-    app.use('/data', post);
-    app.use('/search', search);
+    app.use(basePath + ScrapePath, ScrapeRouter);
+    app.use(basePath + DataPath, DataRouter);
     app.use((_req, res) => res.status(404).json({ message: "These are not the droids you're looking for." }));
 
-    app.listen(port, () => {
-        console.log(`MikroORM express TS example started at http://localhost:${port}`);
+    const server = app.listen(port, () => {
+        console.log(`started http://localhost:${port}`);
         mongo.connect();
     });
+    const shutdown = () => {
+        console.log('SIG signal received: closing HTTP server');
+        server.close(() => {
+            Promise.all([mongo.disconnect()]).then(() => { console.log('shutdown complete'); });
+        });
+    };
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
 })();

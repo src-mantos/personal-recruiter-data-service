@@ -5,8 +5,11 @@
 
 /**
  * ISearchQuery -
- * The job post data primary filter query object
+ * Basic query object for Post Data
  * @category External
+ * @typedef {object} ISearchQuery
+ * @property {string} keywords.required
+ * @property {ISearchFilter[]} filters
  */
 export interface ISearchQuery {
     /**
@@ -23,6 +26,13 @@ export interface ISearchQuery {
      */
     filters?: ISearchFilter[];
 }
+/**
+ * Experimental filter object
+ * @category External
+ * @typedef {object} ISearchFilter
+ * @property {string} key
+ * @property {object} value
+ */
 export interface ISearchFilter {
     key: string;
     value: any;
@@ -32,42 +42,41 @@ export interface ISearchFilter {
  * IPostData -
  * The Standard Job Post Data that will be scraped from underlying services
  * @category External
+ * @typedef {object} IPostData
+ * @property {string} _id - unique identifier
+ * @property {IVendorMetadata} vendorMetadata - vendor specific raw metadata for manual comparison
+ * @property {IPostDataIndex} indexMetadata - this should default to not provided unless requested
+ * @property {IScrapeRequest} request - @todo rename to originalRequest
+ * @property {string} captureTime - record creation time
+ * @property {string} postedTime - captured posting date, will need to parse this into a date object
+ * @property {string} directURL
+ * @property {string} title - Main label from source
+ * @property {string} organization - Job Poster
+ * @property {string} location
+ * @property {string} description
+ * @property {string} salary
  */
 export interface IPostData {
-    /**
-     * external placeholder for internal ID typing
-     */
     _id?: any;
-
-    /**
-     * vendor specific metadata associated to a post that may or may not be useful
-     */
     vendorMetadata?: IVendorMetadata;
-
     indexMetadata?: IPostDataIndex;
+    request?: IScrapeRequest;
     captureTime: Date;
     directURL: string;
-    request?: IScrapeRequest;
-
-    /**
-     * Main label from source
-     */
     title: string;
-    /**
-     * Job Poster
-     */
     organization: string;
     location: string;
     description: string;
     salary?: string;
-    /**
-     * captured posting date, will need to parse this into a date object
-     */
     postedTime: string;
 }
 
 /**
  * standardizing intermediate scrape products
+ * @category External
+ * @typedef {object}
+ * @property {object} metadata - automated first pass processing
+ * @property {object} rawdata - capture products
  */
 export interface IVendorMetadata {
     metadata: { [key: string]: any };
@@ -76,23 +85,17 @@ export interface IVendorMetadata {
 
 /**
  * metric data about the job posting
+ * @category Internal
+ * @typedef {object} IPostData
+ * @property {integer} pageSize - number of posts on a page
+ * @property {integer} postIndex - current post index
+ * @property {integer} pageIndex - current page index @see pageDepth
+ * @property {boolean} completed - request complete
  */
 export interface IPostDataIndex {
-    /**
-     * number of posts on a page
-     */
     pageSize: number;
-    /**
-     * current post index
-     */
     postIndex: number;
-    /**
-     * current page index
-     */
     pageIndex: number;
-    /**
-     * has the post been fully scraped?
-     */
     completed: boolean;
 }
 
@@ -100,22 +103,29 @@ export interface IPostDataIndex {
  * IScrapeRequest -
  * The standard job post data request object
  * @category External
+ * @typedef {object} IScrapeRequest
+ * @property {string} uuid
+ * @property {string} keyword.required - Search Keywords
+ * @property {integer} pageDepth - Number of pages to scrape
+ * @property {string} location
+ * @property {string} requestTime - date-time of request enqueue
  */
 export interface IScrapeRequest {
-    /** @type {string} UUID for corrolating search results */
     uuid?: string;
-    /** @type {Date} Search Reuqest time */
     requestTime?: Date;
-    /** @type {string} Primary Search Term */
     keyword: string;
-    /** @type {string} Optional Location Parameter */
     location?: string;
-    /** @type {number} Number of pages to scrape */
     pageDepth: number;
 }
 
 /**
+ * IScrapePostDataRequest
  * @category Internal
+ * @typedef {object} IScrapePostDataRequest
+ * @property {string} _id - unique object id
+ * @property {boolean} complete - is request complete
+ * @property {object} metrics - @see {IRunMetric}
+ * @property {object} data - IPostData[] - @see {IPostData}
  */
 export interface IScrapePostDataRequest {
     // external placeholder for internal ID typing
@@ -148,12 +158,26 @@ export interface IRunMetric {
 }
 
 /**
+ * Separating scrape processes from other operations
+ * @see https://nodejs.org/api/child_process.html#child_processforkmodulepath-args-options
+ * @category Internal
+ */
+export interface IPC<T> {
+    operation: 'requestUpdates'|'postData'|'error'|'exit',
+    payload: T
+}
+
+/**
  * Internal Component Error
  * Base Error Class for explicate error handling?
  * Removing `extends` due to inheritance issues
  * https://www.typescriptlang.org/docs/handbook/2/classes.html#inheriting-built-in-types
  * @category Errors
  * @group error
+ * @typedef {object} ComponentError
+ * @property {string} name
+ * @property {any} message
+ * @property {string} stack
  */
 export class ComponentError implements Error {
     name: string;

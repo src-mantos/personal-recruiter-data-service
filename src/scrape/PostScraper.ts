@@ -12,8 +12,12 @@ function IgnoreFactory (page: Page | undefined) {
 }
 
 /**
- * (abstract) PostScraper -
- * Polymorphic container for Scrape implementations
+ * Common base class for scrape implementations.
+ * the primary workflow for all implementations:
+ * - await init();
+ * - await run();
+ *   - buildDataTree() // get a width first index of job post links & metadata
+ *   - fetchPostDataSet() // get full post data from the index
  */
 export abstract class PostScraper {
     /** @type {number} related to {@link IScrapeRequest.pageDepth} */
@@ -32,6 +36,11 @@ export abstract class PostScraper {
     runData: PostData[];
     postDao: PostDao;
 
+    /**
+     * auto injected dependency @see tsyringe
+     * @param variables
+     * @param postDao
+     */
     constructor (@inject('scrape_template_vars') variables: string, @inject('PostDao') postDao: PostDao) {
         this.currentPage = 0;
         this.elementCount = 0;
