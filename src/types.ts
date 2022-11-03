@@ -1,10 +1,10 @@
 /**
  * Primary Interfaces
- * @module api
+ * @module types
  */
 
 /**
- * ISearchQuery -
+ * ISearch Query -
  * Basic query object for Post Data
  * @category External
  * @typedef {object} ISearchQuery
@@ -39,14 +39,12 @@ export interface ISearchFilter {
 }
 
 /**
- * IPostData -
+ * IPost Data -
  * The Standard Job Post Data that will be scraped from underlying services
  * @category External
  * @typedef {object} IPostData
  * @property {string} _id - unique identifier
- * @property {IVendorMetadata} vendorMetadata - vendor specific raw metadata for manual comparison
- * @property {IPostDataIndex} indexMetadata - this should default to not provided unless requested
- * @property {IScrapeRequest} request - @todo rename to originalRequest
+ * @property {boolean} userModified - lock for automation to not alter user updated records
  * @property {string} captureTime - record creation time
  * @property {string} postedTime - captured posting date, will need to parse this into a date object
  * @property {string} directURL
@@ -58,10 +56,8 @@ export interface ISearchFilter {
  */
 export interface IPostData {
     _id?: any;
-    vendorMetadata?: IVendorMetadata;
-    indexMetadata?: IPostDataIndex;
-    request?: IScrapeRequest;
-    captureTime: Date;
+    userModified:boolean;
+    captureTime?: Date;
     directURL: string;
     title: string;
     organization: string;
@@ -72,9 +68,25 @@ export interface IPostData {
 }
 
 /**
+ * IPost Meta Data -
+ * Breaking out the useful ancillary data
+ * @category External
+ * @typedef {object} IPostMetaData
+ * @property {IVendorMetadata} vendorMetadata - vendor specific raw metadata for manual comparison
+ * @property {IPostDataIndex} indexMetadata - this should default to not provided unless requested
+ * @property {IScrapeRequest} activeRequest - the active scrape request
+ */
+export interface IPostMetaData {
+    vendorMetadata: IVendorMetadata;
+    indexMetadata: IPostDataIndex;
+    activeRequest: IScrapeRequest;
+    // requests: IScrapeRequest[];
+}
+
+/**
  * standardizing intermediate scrape products
  * @category External
- * @typedef {object}
+ * @typedef {object} IVendorMetadata
  * @property {object} metadata - automated first pass processing
  * @property {object} rawdata - capture products
  */
@@ -86,7 +98,7 @@ export interface IVendorMetadata {
 /**
  * metric data about the job posting
  * @category Internal
- * @typedef {object} IPostData
+ * @typedef {object} IPostDataIndex
  * @property {integer} pageSize - number of posts on a page
  * @property {integer} postIndex - current post index
  * @property {integer} pageIndex - current page index @see pageDepth
@@ -100,7 +112,7 @@ export interface IPostDataIndex {
 }
 
 /**
- * IScrapeRequest -
+ * IScrape Request -
  * The standard job post data request object
  * @category External
  * @typedef {object} IScrapeRequest
@@ -119,7 +131,7 @@ export interface IScrapeRequest {
 }
 
 /**
- * IScrapePostDataRequest
+ * IScrape PostData Request
  * @category Internal
  * @typedef {object} IScrapePostDataRequest
  * @property {string} _id - unique object id
@@ -128,15 +140,15 @@ export interface IScrapeRequest {
  * @property {object} data - IPostData[] - @see {IPostData}
  */
 export interface IScrapePostDataRequest {
-    // external placeholder for internal ID typing
+    /** external placeholder for internal ID typing */
     _id: any;
 
-    // has completed
+    /** has completed */
     complete: boolean;
-    // the raw metrics from individual scrape implementations
+    /** the raw metrics from individual scrape implementations */
     metrics: IRunMetric[];
-    // Optional scrape result set
-    data?: IPostData[];
+    /** Optional scrape result set */
+    posts?: IPostData[];
 }
 /**
  * communicating metrics out of the scrape/capture interface

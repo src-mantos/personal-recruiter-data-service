@@ -1,11 +1,10 @@
-// # sourceMappingURL=dist/src/scrape/PostScraper.js.map
-import { ComponentError, NavigationError, IScrapeRequest, IPostData, IRunMetric } from '..';
+import { ComponentError, NavigationError, IScrapeRequest, IPostData, IRunMetric } from '../types';
 import { chromium, Browser, Page, Locator } from 'playwright';
-import path from 'path';
 import { inject } from 'tsyringe';
 import PostData from '../entity/PostData';
 import { PostDao } from '../dao/PostDao';
 import ScrapeRequest from '../entity/ScrapeRequest';
+import { ScrapeDao } from '../dao/ScrapeDao';
 
 function IgnoreFactory (page: Page | undefined) {
     return () => {};
@@ -35,19 +34,23 @@ export abstract class PostScraper {
     vendorDesc: string;
     runData: PostData[];
     postDao: PostDao;
+    scrapeDao: ScrapeDao;
 
     /**
      * auto injected dependency @see tsyringe
      * @param variables
      * @param postDao
      */
-    constructor (@inject('scrape_template_vars') variables: string, @inject('PostDao') postDao: PostDao) {
+    constructor (@inject('scrape_template_vars') variables: string,
+                 @inject('PostDao') postDao: PostDao,
+                 @inject('ScrapeDao') scrapeDao: ScrapeDao) {
         this.currentPage = 0;
         this.elementCount = 0;
         this.templateVars = variables.split(',');
         this.urlTemplate = '';
         this.runData = [];
         this.postDao = postDao;
+        this.scrapeDao = scrapeDao;
     }
 
     /**
@@ -65,8 +68,8 @@ export abstract class PostScraper {
     }
 
     /**
-     * a general purpose page/tab for scrape usage. also initializes networking short cuts.
-     * @returns playwright.Page
+     * a general purpose page/window for scrape usage. also initializes networking short cuts.
+     * @returns {Page}
      */
     protected async createNewPage (): Promise<Page> {
         if (this.browser === undefined) {
@@ -104,31 +107,41 @@ export abstract class PostScraper {
         }
     }
 
-    public getPageData (): IPostData[] {
+    /**
+     * @deprecated
+     */
+    public getPageData (): PostData[] {
         return this.runData;
     }
 
     /**
      * main iteration method for all search scrapers
-     * @param search
+     * Implemented by children
+     * @param {IScrapeRequest} search
      */
     protected abstract nextPage(search?: IScrapeRequest): Promise<void>;
     /**
      * implementation specific direct url scraping capabilities. add to the post data supplied
+     * Implemented by children
      * @param post
      * @param page
      */
     protected abstract scrapePostData(post: PostData, page: Page): Promise<PostData>;
     /**
-     * Stubb implementation for decorating/transforming post data from primary search index
+     * any implementation specific "index" transformations before in-depth data collection
      * @param post
      * @returns
      */
-    protected decorateMetaData (post: PostData): PostData {
+    protected transformMeta (post: PostData): PostData {
         return post;
     }
 
-    protected abstract transform(post: PostData): void;
+    /**
+     * populating main fields to the PostData object
+     * Implemented by children
+     * @param {PostData} post
+     */
+    protected abstract transformData(post: PostData): void;
 
     /**
      * Primary Entry Point for scraping post data.
@@ -136,7 +149,7 @@ export abstract class PostScraper {
      * - fetch search index <primary failure pt>
      * - track index page data (width first)
      * - fetch post data by local index
-     * @param IScrapeRequest
+     * @param {IScrapeRequest} search
      */
     public async run (search: ScrapeRequest): Promise<void> {
         if (!search.uuid) {
@@ -158,6 +171,8 @@ export abstract class PostScraper {
         let indexCt = 0;
         for (let i = 1; i <= search.pageDepth; i++) {
             const pageIndex: PostData[] = await this.buildDataTree(search, metric);
+            search.posts = search.posts.concat(pageIndex);
+            await this.scrapeDao.upsert(search);
 
             _runData = _runData.concat(pageIndex);
             this.runData = _runData;
@@ -177,7 +192,9 @@ export abstract class PostScraper {
         }
     }
 
-    /** Common Abstraction Layer */
+    /**
+     * URL generation method
+     */
     protected buildPrimaryURL (search: IScrapeRequest): string {
         let url = '' + this.urlTemplate;
 
@@ -195,6 +212,10 @@ export abstract class PostScraper {
         return url;
     }
 
+    /**
+     * long running navigation method to load scrape data
+     * @param {IScrapeRequest} search
+     */
     protected async navigateToPrimarySearch (search: IScrapeRequest) {
         if (this.page === undefined) {
             throw new ComponentError('Page Object Undefined', '[PostScraper]');
@@ -207,6 +228,12 @@ export abstract class PostScraper {
             .catch(IgnoreFactory(this.page));
     }
 
+    /**
+     * navigate to the primary job post index (ie. search results) and store placeholders of the full post data
+     * @param {ScrapeRequest} request - user requested operation w/uuid
+     * @param {IRunMetric} metric - simple process metrics (internal use only)
+     * @returns {PostData[]}
+     */
     protected async buildDataTree (request: ScrapeRequest, metric: IRunMetric): Promise<PostData[]> {
         if (this.page === undefined) {
             throw new ComponentError('Page Object Undefined', '[PostScraper]');
@@ -254,7 +281,8 @@ export abstract class PostScraper {
             const linkData = await this.getAttributes(link, this.linkAttributes);
             const shell = new PostData();
 
-            shell.request = request;
+            // shell.addUserRequest(request);
+            // shell.setActiveRequest(request);
             shell.indexMetadata = {
                 postIndex: index,
                 pageIndex: this.currentPage,
@@ -273,7 +301,8 @@ export abstract class PostScraper {
                 vendor: this.vendorDesc
             };
 
-            this.decorateMetaData(shell);
+            this.transformMeta(shell);
+            await this.postDao.upsert(shell);
 
             dataSet.push(shell);
         }
@@ -281,7 +310,10 @@ export abstract class PostScraper {
     }
 
     /**
-     * Primariy handling fetches let sub-classes handle specifics
+     * Primary orchestration method. based on partial PostData:
+     * - navigate to page
+     * - scrape the raw data
+     * - preforme any implementation specific transform @see {PostScraper.transform}
      * @param dataSet
      * @returns
      */
@@ -297,7 +329,7 @@ export abstract class PostScraper {
                         .waitForNavigation({ waitUntil: 'networkidle', timeout: 10000 })
                         .catch(IgnoreFactory(this.page));
                     await this.scrapePostData(post, page);
-                    this.transform(post);
+                    this.transformData(post);
                     complete = true;
                     post.indexMetadata.completed = true;
                     metric.numComplete += 1;
@@ -309,7 +341,7 @@ export abstract class PostScraper {
             }
 
             await page.close();
-            await this.postDao.upsert(post);
+            await this.postDao.update(post);
         }
         return dataSet;
     }
@@ -321,15 +353,5 @@ export abstract class PostScraper {
             retVal[key] = await domItem.getAttribute(key);
         }
         return retVal;
-    }
-
-    protected async captureError () {
-        if (this.page === undefined) {
-            throw new Error('Scrape Browser must be initialized and ready.');
-        }
-        const errTime = new Date();
-        await this.page.screenshot({
-            path: path.join(__dirname, '../../../dist', 'failure-' + errTime.getTime() + '.png')
-        });
     }
 }

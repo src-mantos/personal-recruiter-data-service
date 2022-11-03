@@ -1,10 +1,11 @@
-import type { IPostData, IScrapeRequest, IScrapePostDataRequest, IRunState, IRunMetric } from '..';
+import type { IPostData, IScrapeRequest, IScrapePostDataRequest, IRunState, IRunMetric } from '../types';
 import mongoose from 'mongoose';
 import { v4 } from 'uuid';
 
 /**
- * {@inheritDoc IScrapeRequest}
- * {@inheritDoc IScrapePostDataRequest}
+ * @see {IScrapeRequest} & @see {IScrapePostDataRequest}
+ * the Scrape Request Implementation uses 2 interfaces, 1 publicly facing and the other for internal use.
+ * {@inheritDoc IScrapeRequest} {@inheritDoc IScrapePostDataRequest}
  */
 export default class ScrapeRequest implements IScrapeRequest, IScrapePostDataRequest {
     _id: mongoose.Types.ObjectId;
@@ -19,14 +20,14 @@ export default class ScrapeRequest implements IScrapeRequest, IScrapePostDataReq
 
     complete: boolean;
     metrics: IRunMetric[];
-    data?: IPostData[];
+    posts: IPostData[];
 
     constructor (opts?: IScrapeRequest) {
-        // this._id = new mongoose.Types.ObjectId();
         this.requestTime = new Date();
         this.complete = false;
         this.metrics = [];
         this.pageDepth = 1;
+        this.posts = [];
         if (opts?.uuid !== undefined) {
             this.uuid = opts.uuid;
         }
@@ -36,6 +37,4 @@ export default class ScrapeRequest implements IScrapeRequest, IScrapePostDataReq
             this.pageDepth = opts.pageDepth;
         }
     }
-
-    keywords: string;
 }

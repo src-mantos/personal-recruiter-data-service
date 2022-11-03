@@ -1,37 +1,41 @@
-import type { IScrapeRequest, IPostData, IVendorMetadata, ISearchQuery, IPostDataIndex } from '..';
+import { IScrapeRequest, IPostData, IVendorMetadata, ISearchQuery, IPostDataIndex, IScrapePostDataRequest, ComponentError } from '../types';
 import PostData from '../entity/PostData';
-import { MongoConnection, MongoID, Dao } from './MongoConnection';
-import mongoose, { Schema, model, Model, connect, Types } from 'mongoose';
+import { MongoConnection, MongoID, Dao, mongoDoc } from './MongoConnection';
+import mongoose, { Schema, model, FilterQuery, Document, PreSaveMiddlewareFunction, CallbackWithoutResultAndOptionalError, SaveOptions } from 'mongoose';
 import { inject, injectable } from 'tsyringe';
 import { ScrapeDataModel } from './ScrapeDao';
+import ScrapeRequest from '../entity/ScrapeRequest';
 
-const vendorMetadataSchema = new Schema<IVendorMetadata>({
+export const postCollectionName = 'post-data';
+/** subdoc for raw data */
+const VendorMetadataSchema = new Schema<IVendorMetadata>({
     metadata: Schema.Types.Mixed,
     rawdata: Schema.Types.Mixed
 });
+/** subdocs for metric data */
 const IndexMetadataSchema = new Schema<IPostDataIndex>({
     pageSize: { type: Number, required: true },
     postIndex: { type: Number, required: true },
     pageIndex: { type: Number, required: true },
     completed: { type: Boolean, required: true }
 });
-const PostDataSchema = new Schema<IPostData>(
+/** primary data document that stores all of the Raw & Metric data, as well as high level properties */
+const PostDataSchema = new Schema<PostData>(
     {
         _id: Schema.Types.ObjectId,
-        request: { type: Schema.Types.ObjectId, ref: 'post-request' },
-        directURL: { type: String, required: true, index: true },
-        vendorMetadata: vendorMetadataSchema,
-        // {
-        //     metadata: Schema.Types.Mixed,
-        //     rawdata: Schema.Types.Mixed
-        // },
+        directURL: {
+            type: String,
+            required: true,
+            index: true,
+            validate: {
+                validator: function (obj:string) {
+                    return obj !== undefined && obj !== null && obj.match(/^http.*/);
+                },
+                message: props => `${props.value} directURL is required`
+            }
+        },
+        vendorMetadata: VendorMetadataSchema,
         indexMetadata: IndexMetadataSchema,
-        // {
-        //     pageSize: { type: Number, required: true },
-        //     postIndex: { type: Number, required: true },
-        //     pageIndex: { type: Number, required: true },
-        //     completed: { type: Boolean, required: true }
-        // },
         captureTime: { type: Date, required: true },
         postedTime: { type: String, required: false },
 
@@ -41,8 +45,9 @@ const PostDataSchema = new Schema<IPostData>(
         location: { type: String, required: true, index: true },
         salary: { type: String, required: false, index: true }
     },
-    { collection: 'post-data' }
+    { collection: postCollectionName }
 );
+/** Text Search Index */
 PostDataSchema.index(
     {
         title: 'text',
@@ -57,81 +62,97 @@ PostDataSchema.index(
         sparse: true
     }
 );
-const PostDataModel = model('post-data', PostDataSchema);
+const refDataHook: PreSaveMiddlewareFunction<PostData> = async function (this: PostData, next: CallbackWithoutResultAndOptionalError, opts: SaveOptions) {
+    if (!this._id) {
+        this._id = new mongoose.Types.ObjectId();
+    }
+    next();
+};
+PostDataSchema.pre<PostData>('save', refDataHook);
+export const PostDataModel = model(postCollectionName, PostDataSchema);
 
+/**
+ * Under the current implementation we assume the database has been connected too, elsewhere.
+ */
 @injectable()
 export class PostDao implements Dao<PostData> {
+    // @deprecated - mongoose maintains internal state
     connection: MongoConnection;
     constructor (@inject('MongoConnection') connection: MongoConnection) {
         this.connection = connection;
     }
 
-    async upsert (entity: PostData | IPostData): Promise<void> {
-        const val = PostDataModel.findOneAndUpdate({ directURL: entity.directURL }, entity, {
-            new: true,
-            upsert: true
-        }).catch((err) => {
-            console.log(err, val, entity);
-            this.insert(entity);
-        });
-        await val;
+    async findOne (entity: PostData): Promise<mongoDoc<PostData>> {
+        return PostDataModel.findOne({ directURL: entity.directURL }).exec();
     }
 
-    async insert (entity: PostData | IPostData): Promise<void> {
-        entity._id = new mongoose.Types.ObjectId();
-        const dbo = new PostDataModel(entity);
-        dbo.save(function (err) {
-            if (err) {
-                console.error(err);
-            }
-            // we probably need to update the scrape reference
-            const request = new ScrapeDataModel(entity.request);
-            request.save();
-            dbo.save();
-        });
+    async update (entity: PostData): Promise<mongoDoc<PostData>> {
+        return this.upsert(entity);
+        // if (entity._id) {
+        //     return PostDataModel.findByIdAndUpdate(entity._id, entity).exec();
+        // } else {
+        //     throw new ComponentError('trying to update a document without _id. use upsert when in doubt.');
+        // }
     }
 
-    async update (entity: PostData): Promise<void> {
-        await PostDataModel.findOneAndUpdate({ directURL: entity.directURL }, entity).exec();
+    async upsert (entity: PostData): Promise<mongoDoc<PostData>> {
+        const existing = await PostDataModel.findOne({ directURL: entity.directURL }).exec();
+        if (existing === null) {
+            const newDoc = new PostDataModel(entity);
+            await newDoc.save();
+            return newDoc;
+        } else {
+            PostData.apply(existing, entity);
+            await existing.save();
+            return existing;
+        }
+        // const doc = await PostDataModel.findOneAndUpdate({ directURL: entity.directURL }, entity, { upsert: true, new: true, lean: true }).exec();
+        // entity._id = doc._id;
+        // return doc;
+    }
+
+    async delete (entity: PostData): Promise<mongoDoc<PostData>> {
+        if (entity._id !== undefined) {
+            return PostDataModel.findByIdAndDelete(entity._id).exec();
+        } else {
+            return PostDataModel.findOneAndDelete({ directURL: entity.directURL }).exec();
+        }
     }
 
     /**
-     * Primary data input from scrapers/transformers
-     * @param input
-     */
-    async importPostData (input: IPostData[]) {
-        throw new Error('Method not implemented.');
-    }
-
-    /**
-     * Primary Search interface for the Primary UI
+     * Primary Text Search
      * @param searchQuery
      */
-    async searchStoredData (searchQuery: ISearchQuery): Promise<PostData[]> {
+    async textSearch (searchQuery: ISearchQuery): Promise<PostData[]> {
+        // const fullTextQuery:mongoose.FilterQuery<PostData> = {
+        //     $text: { $search: searchQuery.keywords }
+        // };
+
         return PostDataModel.find({ $text: { $search: searchQuery.keywords } }, { score: { $meta: 'textScore' } })
             .sort({
                 score: { $meta: 'textScore' }
-            })
-            .populate('request');
-    }
-
-    async getRequestData (requestId: MongoID) {
-        return PostDataModel.find({ request: new mongoose.Types.ObjectId(requestId as any) });
+            }).exec();
     }
 
     /**
-     * basic update post data
-     * @param input
+     * Retrieve post data by request
+     * @param request - uuid required
+     * @returns {PostData[]|null}
      */
-    async updatePostData (input: IPostData): Promise<IPostData> {
-        throw new Error('Method not implemented.');
+    async getRequestData (request: IScrapeRequest): Promise<PostData[]|null> {
+        const userReq = await ScrapeDataModel.findOne({ uuid: request.uuid }).exec();
+        if (userReq !== null) {
+            const postIDs = userReq.posts.map((obj) => { return obj._id; });
+            return PostDataModel.find({ _id: { $in: postIDs } }).exec();
+        }
+        return null;
     }
 
-    /**
-     * basic get post daa
-     * @param input
-     */
-    async getPostData (id: any): Promise<IPostData> {
-        throw new Error('Method not implemented.');
+    async getPostDataFacets ():Promise<any> {
+        return PostDataModel.aggregate().facet({
+            title: [{ $group: { _id: '$title' } }],
+            organization: [{ $group: { _id: '$organization' } }],
+            location: [{ $group: { _id: '$location' } }]
+        }).exec();
     }
 }

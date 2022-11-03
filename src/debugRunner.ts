@@ -1,9 +1,12 @@
-/* eslint-disable no-undef */
+#!/usr/bin/env ts-node
+/**
+ * Education Runnable, Not a main runnable class
+ */
 import 'reflect-metadata';
-import { IPC, ISearchQuery } from '.';
+import { IPC, ISearchQuery } from './types';
 
 import { spawn, fork } from 'child_process';
-import container from './DIBindings';
+import container from './util/DIBindings';
 import { MongoConnection } from './dao/MongoConnection';
 
 process.on('SIGINT', () => {

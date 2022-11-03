@@ -1,12 +1,13 @@
 import express, { Request, Response } from 'express';
+import expressWS from 'express-ws';
 import { check, ValidationError, validationResult } from 'express-validator';
 
 import container from './DIBindings';
-import { ScrapeQueueRunner } from './scrape/ScrapeQueueRunner';
+import { ScrapeQueueRunner } from '../scrape/ScrapeQueueRunner';
 
-import { IScrapeRequest, ISearchQuery } from '.';
-import { PostDao } from './dao/PostDao';
-import { ScrapeDao } from './dao/ScrapeDao';
+import { IScrapeRequest, ISearchQuery, IPostData } from '../types';
+import { PostDao } from '../dao/PostDao';
+import { ScrapeDao } from '../dao/ScrapeDao';
 
 export const ScrapePath = '/scrape';
 export const DataPath = '/data';
@@ -108,6 +109,7 @@ ScrapeRouter.patch('/run',
     async (_req: Request, res: Response) => {
         try {
             scrapeRunner.runQueue();
+            res.status(200);
             res.json(scrapeRunner.activeRequest);
         } catch (ex) {
             res.json(ex);
@@ -135,10 +137,11 @@ DataRouter.get('/request',
             return;
         }
         try {
+            res.status(202);
             const request:IScrapeRequest = req.query as unknown as IScrapeRequest;
             const data = await scrapeDao.findRequest(request);
             if (data) {
-                const results = await postDao.getRequestData('' + data._id);
+                const results = await postDao.getRequestData(data);
                 res.json({
                     ...data,
                     data: results
@@ -146,6 +149,7 @@ DataRouter.get('/request',
             } else {
                 res.json(data);
             }
+            res.status(200);
         } catch (ex) {
             console.error(ex);
             res.status(500);
@@ -171,8 +175,64 @@ DataRouter.get('/search',
         }
 
         const query: ISearchQuery = req.query as unknown as ISearchQuery;
-        const results = await postDao.searchStoredData(query);
+        const results = await postDao.textSearch(query);
 
         res.json(results);
     }
 );
+
+/**
+ * GET /v1/data/getCommonData/
+ * @summary Pulls post data based on "commonality"
+ * @tags data
+ * @return {IPostData[]} 200 - success response - application/json
+ * @return 500
+ */
+DataRouter.get('/getCommonData',
+    async (req: Request, res: Response) => {
+        const results = await scrapeDao.findCommonPosts();
+
+        res.json(results);
+    }
+);
+
+/**
+ * @typedef {object} tmp
+ * @property {object} title
+ * @property {object} organization
+ * @property {object} location
+ */
+type tmp = {
+    title: string[],
+    organization: string[],
+    location: string[]
+}
+
+/**
+ * GET /v1/data/getPostFacet/
+ * @summary Pulls post data based on "commonality"
+ * @tags data
+ * @return {tmp[]} 200 - success response - application/json
+ * @return 500
+ */
+DataRouter.get('/getPostFacet',
+    async (req: Request, res: Response) => {
+        const results = await postDao.getPostDataFacets();
+
+        res.json(results);
+    }
+);
+
+export const applyWebSockets = (server:expressWS.Instance) => {
+    server.app.ws('/v1/scrape/status/', function (ws, req) {
+        // ws.emit("message")
+        const timer = setInterval(() => {
+            ws.emit('message', scrapeRunner.getQueueStatus());
+        }, 1000);
+
+        ws.addEventListener('close', (event) => {
+            clearInterval(timer);
+        });
+        console.log('Connected To Socket');
+    });
+};

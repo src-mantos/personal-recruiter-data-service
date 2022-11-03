@@ -1,52 +1,48 @@
 #!/usr/bin/env ts-node
-/* eslint-disable no-undef */
+/**
+ * Education Runnable, Not a main runnable class
+ */
 import 'reflect-metadata';
-import * as types from '.';
-import PostData from '../src/entity/PostData';
-import { PostScrapeManager } from '../src/scrape/PostScrapeManager';
-
-import container from '../src/DIBindings';
-import fs from 'fs';
-import path from 'path';
+import container from './util/DIBindings';
 import { MongoConnection } from './dao/MongoConnection';
+import { IScrapeRequest } from './types';
+import { ScrapeQueueRunner } from './scrape/ScrapeQueueRunner';
 
+/* eslint-disable no-undef */
 let timer:NodeJS.Timer;
 /**
  * This is where we want to validate the new additions.
  * the ts-node integration is great for jest integration but debugging is problematic
  * this is the primary debug entry point for vs code
  */
- process.on('SIGINT', () => {
+process.on('SIGINT', () => {
     // attempt graceful close of the search/scrape
     (async () => {
+        clearInterval(timer);
         console.log('shutting down the db connection');
         const conn = container.resolve(MongoConnection);
         await conn.disconnect();
-        clearInterval(timer);
     })();
 });
 
 async function run () {
-    const simpleSearch: types.IScrapeRequest = {
+    const simpleSearch: IScrapeRequest = {
         keyword: 'full stack engineer',
         // location: 'Seattle, WA',
         pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */
     };
 
-    const instance = container.resolve(PostScrapeManager);
-    await instance.initialize();
-    instance.queueRequest(simpleSearch);
+    const scrapeRunner: ScrapeQueueRunner = container.resolve(ScrapeQueueRunner);
+    scrapeRunner.enqueue(simpleSearch);
 
     timer = setInterval(() => {
         console.log('************************************');
-        console.log(JSON.stringify(instance.getRequestMetrics()));
+        console.log(JSON.stringify(scrapeRunner.getQueueStatus()));
         console.log('************************************');
     }, 60000);
 
-    await instance.runPromiseQueue();
-
-    await instance.destruct();
-    return 0;
+    await scrapeRunner.runQueue();
+    clearInterval(timer);
 }
 
 run();

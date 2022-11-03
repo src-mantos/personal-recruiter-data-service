@@ -1,18 +1,25 @@
-import type { IScrapeRequest } from '../..';
+import type { IScrapeRequest } from '../../types';
 import PostData from '../../entity/PostData';
 import { PostScraper } from '../PostScraper';
 import { Page } from 'playwright';
 import { inject, injectable } from 'tsyringe';
 import { PostDao } from '../../dao/PostDao';
+import { ScrapeDao } from '../../dao/ScrapeDao';
 
+/**
+ * This is the Dice specific implementation
+ * @see {PostScraper} for common implementation.
+ * {@inheritDoc PostScraper}
+ */
 @injectable()
 export class DicePostScraper extends PostScraper {
     constructor (
         @inject('scrape_template_vars') variables: string,
         @inject('scrape_dice_url_template') urlTemplate: string,
-        @inject('PostDao') postDao: PostDao
+        @inject('PostDao') postDao: PostDao,
+        @inject('ScrapeDao') scrapeDao: ScrapeDao
     ) {
-        super(variables, postDao);
+        super(variables, postDao, scrapeDao);
         this.currentPage = 1;
         this.urlTemplate = urlTemplate;
         this.linkSelector = 'a.card-title-link';
@@ -41,6 +48,15 @@ export class DicePostScraper extends PostScraper {
         return post;
     }
 
+    protected transformData (post: PostData) {
+        const rawData = post.vendorMetadata.rawdata;
+        post.title = rawData.title.join(' ');
+        post.location = rawData.location.join(' ').replace(/([\r\n]|\\r|\\n)+/, '');
+        post.organization = rawData.org.join(' ').replace(/([\r\n]|\\r|\\n)+/, '');
+        post.postedTime = rawData.postDate.join(' ');
+        post.description = rawData.detail.join(' ').replace(/([\r\n]|\\r|\\n)+/, '');
+    }
+
     async nextPage (search: IScrapeRequest): Promise<void> {
         if (this.page === undefined) {
             throw new Error('Scrape Browser must be initialized and ready.');
@@ -48,17 +64,5 @@ export class DicePostScraper extends PostScraper {
 
         this.currentPage++;
         return this.navigateToPrimarySearch(search);
-    }
-
-    protected transform (post: PostData) {
-        const rawData = post.vendorMetadata.rawdata;
-        // const regex = "[s|S]alary[:\-\s]*\$?([\d,\.])+[:\-\s\$]*([\d,\.])+"
-        post.title = rawData.title.join(' ');
-        post.location = rawData.location.join(' ');
-        post.organization = rawData.org.join(' ');
-        post.postedTime = rawData.postDate.join(' ');
-        post.description = rawData.detail.join(' ');
-        // const res = regex.exec(post.description);
-        // console.log('Salary', res?.groups);
     }
 }

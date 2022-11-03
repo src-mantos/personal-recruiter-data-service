@@ -1,10 +1,12 @@
 import 'reflect-metadata';
 
 import express, { Request, Response } from 'express';
+import expressWS from 'express-ws';
 import expressJSDocSwagger from 'express-jsdoc-swagger';
-import container from './DIBindings';
+import cors from 'cors';
+import container from './util/DIBindings';
 
-import { ScrapePath, ScrapeRouter, DataPath, DataRouter } from './serverRoutes';
+import { ScrapePath, ScrapeRouter, DataPath, DataRouter, applyWebSockets } from './util/serverRoutes';
 import { MongoConnection } from './dao/MongoConnection';
 /**
  * Main api runner
@@ -15,6 +17,7 @@ const options = {
     info: {
         version: '0.1.0',
         title: 'Personal Recruiter Data Service',
+        description: '',
         license: {
             name: 'MIT'
         }
@@ -27,7 +30,7 @@ const options = {
     },
     baseDir: __dirname,
     // Glob pattern to find your jsdoc files (multiple patterns can be added in an array)
-    filesPattern: ['./*.js', './index.d.ts'],
+    filesPattern: ['./util/*.js', './types.d.ts'],
     // URL where SwaggerUI will be rendered
     swaggerUIPath: '/v1/docs',
     // Expose OpenAPI UI
@@ -38,6 +41,7 @@ const options = {
     multiple: true
 };
 expressJSDocSwagger(app)(options);
+const socket = expressWS(app);
 
 const port = container.resolve('service_port');
 const mongo: MongoConnection = container.resolve(MongoConnection);
@@ -53,12 +57,16 @@ const basicLogger = (req: Request, res: Response, next: {():void}) => {
 export const init = (async () => {
     app.use(express.json());
     app.use(basicLogger);
+    app.use(cors({
+        origin: 'http://localhost:8080'
+    }));
 
     app.use(basePath + ScrapePath, ScrapeRouter);
     app.use(basePath + DataPath, DataRouter);
+    applyWebSockets(socket);
     app.use((_req, res) => res.status(404).json({ message: "These are not the droids you're looking for." }));
 
-    const server = app.listen(port, () => {
+    const server = socket.app.listen(port, () => {
         console.log(`started http://localhost:${port}`);
         mongo.connect();
     });

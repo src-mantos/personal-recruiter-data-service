@@ -13,3 +13,6 @@ the [Playwright](https://playwright.dev/docs/cli#generate-code) library was chos
 this will open a chromium browser and playwright script generator.
 
 "typedoc-plugin-markdown": "3.11.14",
+
+Compose Service - WIP the backend hasn't been co-located up to this point
+docker-compose -f composeBackend.yml up

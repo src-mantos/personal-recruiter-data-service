@@ -1,8 +1,9 @@
-import type { ISearchQuery } from '..';
+import type { ISearchQuery } from '../types';
 import { v4 } from 'uuid';
 import mongoose from 'mongoose';
 
 /**
+ * @see {ISearchQuery}
  * {@inheritDoc ISearchQuery}
  */
 export default class SearchRequest implements ISearchQuery {

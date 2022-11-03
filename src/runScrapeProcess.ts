@@ -1,17 +1,17 @@
 /**
- * Fork Scrape Request
+ * Fork Scrape Request Processing
  * @param uuid - process.argv[2]
  * @param pageDepth - process.argv[3]
  * @param keywords - process.argv[4]
  * @param location - process.argv[5]
  */
 import 'reflect-metadata';
-import { ISearchQuery, IScrapeRequest, IPostData, IPC } from '.';
+import { ISearchQuery, IScrapeRequest, IPostData, IPC } from './types';
 
 import { MongoConnection } from './dao/MongoConnection';
 import { PostDao } from './dao/PostDao';
 import { ScrapeDao } from './dao/ScrapeDao';
-import container from './DIBindings';
+import container from './util/DIBindings';
 import ScrapeRequest from './entity/ScrapeRequest';
 import { PostScraper } from './scrape/PostScraper';
 
@@ -58,7 +58,7 @@ async function run () {
     if (!connection.isConnected()) {
         await connection.connect();
     }
-    scrapeDao.insert(scrapeRequest);
+    scrapeDao.upsert(scrapeRequest);
 
     /** start scrape */
     const scrapeComp = [];
@@ -70,7 +70,7 @@ async function run () {
         );
     }
 
-    /** periodic request & metric flush to db */
+    /** periodic request & metric flush to db & calling process */
     let debounceDbUpdate = 1;
     const timer = setInterval(() => {
         (async () => {
@@ -79,7 +79,6 @@ async function run () {
                 payload: scrapeRequest
             });
             if (debounceDbUpdate % 9 === 0) {
-                console.log('updating request in DB');
                 await scrapeDao.update(scrapeRequest);
             }
             debounceDbUpdate++;

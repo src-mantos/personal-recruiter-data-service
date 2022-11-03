@@ -1,10 +1,10 @@
-import { DicePostScraper } from '../src/scrape/impl/DicePostScraper';
-import { IndeedPostScraper } from '../src/scrape/impl/IndeedPostScraper';
+import { DicePostScraper } from '../scrape/impl/DicePostScraper';
+import { IndeedPostScraper } from '../scrape/impl/IndeedPostScraper';
 import { container } from 'tsyringe';
 import dotenv from 'dotenv';
-import { PostDao } from './dao/PostDao';
-import { ScrapeDao } from './dao/ScrapeDao';
-import { MongoConnection } from './dao/MongoConnection';
+import { PostDao } from '../dao/PostDao';
+import { ScrapeDao } from '../dao/ScrapeDao';
+import { MongoConnection } from '../dao/MongoConnection';
 
 container.register<DicePostScraper>('PostScraper', { useClass: DicePostScraper });
 

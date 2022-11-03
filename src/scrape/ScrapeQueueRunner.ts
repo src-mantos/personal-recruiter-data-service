@@ -1,6 +1,5 @@
-import { IScrapeRequest, IPostData, IRunMetric, IPC, ComponentError } from '..';
-import { injectAll, singleton, inject } from 'tsyringe';
-import { ScrapeDao } from '../dao/ScrapeDao';
+import { IScrapeRequest, IPostData, IRunMetric, IPC, ComponentError } from '../types';
+import { singleton } from 'tsyringe';
 import ScrapeRequest from '../entity/ScrapeRequest';
 import { fork } from 'child_process';
 
@@ -49,7 +48,7 @@ export class ScrapeQueueRunner {
     getQueueStatus (): IScrapeRequest[] {
         const result = [];
         if (this.activeRequest) {
-            result.push(this.activeRequest);
+            result.push({ ...this.activeRequest, posts: [] });
         }
         for (const task of this.requestQueue) {
             result.push(task);
@@ -89,9 +88,7 @@ export class ScrapeQueueRunner {
      * Scrape process management
      */
     protected run ():Promise<void> {
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const runner = this;
-        return new Promise<void>((resolve) => {
+        return new Promise<void>((resolve, reject) => {
             const request:IScrapeRequest|undefined = this.dequeue();
             if (request === undefined) { throw new ComponentError('No Scrape Request'); }
             if (request?.pageDepth === undefined) { throw new ComponentError('No Page Depth Set'); }
@@ -106,22 +103,22 @@ export class ScrapeQueueRunner {
             proc.on('message', (data:IPC<any>) => {
                 switch (data.operation) {
                     case 'error':
-                        if (runner.activeRequest) {
-                            runner.activeRequest.complete = false;
+                        if (this.activeRequest) {
+                            this.activeRequest.complete = false;
                         }
-                        throw new ComponentError(data);
-
+                        reject(new ComponentError(data));
+                        break;
                     case 'requestUpdates':
-                        runner.activeRequest = data.payload as ScrapeRequest;
+                        this.activeRequest = data.payload as ScrapeRequest;
                         break;
                     default:
-                        console.log(JSON.stringify(data));
+                        console.log('IPC-msg', JSON.stringify(data));
                         break;
                 }
             });
 
             proc.on('close', (_code: number, _args: any[]) => {
-                console.log(`${runner.activeRequest?.uuid} completed`);
+                console.log(`${this.activeRequest?.uuid} completed`);
                 resolve();
             });
         });

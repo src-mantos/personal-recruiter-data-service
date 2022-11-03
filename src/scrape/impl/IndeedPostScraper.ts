@@ -4,15 +4,22 @@ import { Page } from 'playwright';
 import { inject, injectable } from 'tsyringe';
 import path from 'path';
 import { PostDao } from '../../dao/PostDao';
+import { ScrapeDao } from '../../dao/ScrapeDao';
 
+/**
+ * This is the Indeed specific implementation
+ * @see {PostScraper} for common implementation.
+ * {@inheritDoc PostScraper}
+ */
 @injectable()
 export class IndeedPostScraper extends PostScraper {
     constructor (
         @inject('scrape_template_vars') variables: string,
         @inject('scrape_ind_url_template') urlTemplate: string,
-        @inject('PostDao') postDao: PostDao
+        @inject('PostDao') postDao: PostDao,
+        @inject('ScrapeDao') scrapeDao: ScrapeDao
     ) {
-        super(variables, postDao);
+        super(variables, postDao, scrapeDao);
         this.urlTemplate = urlTemplate;
         this.linkSelector = 'a.jcs-JobTitle';
         this.linkAttributes = ['id', 'data-mobtk', 'data-jk', 'data-ci', 'data-empn', 'data-hiring-event', 'href'];
@@ -48,9 +55,19 @@ export class IndeedPostScraper extends PostScraper {
         return post;
     }
 
-    protected decorateMetaData (post: PostData): PostData {
+    protected transformMeta (post: PostData): PostData {
         post.directURL = 'https://www.indeed.com' + post.directURL;
         return post;
+    }
+
+    protected transformData (post: PostData) {
+        const rawData = post.vendorMetadata.rawdata;
+        post.title = rawData.title.join(' ');
+        post.location = rawData.subTitle.join(' ').replace(/([\r\n]|\\r|\\n)+/, '');
+        post.organization = rawData.subTitle.join(' ').replace(/([\r\n]|\\r|\\n)+/, '');
+        post.postedTime = rawData.hireInsights.join(' ');
+        post.description = rawData.description.join(' ').replace(/([\r\n]|\\r|\\n)+/, '');
+        post.salary = rawData.metadata.join(' ');
     }
 
     async clearPopup () {
@@ -76,20 +93,10 @@ export class IndeedPostScraper extends PostScraper {
         }
 
         await Promise.all([this.page.click('[aria-label="Next"] svg'), this.page.waitForNavigation()]).catch(
-            this.captureError.bind(this)
+            (err) => { console.error(err); }
         );
         this.currentPage++;
 
         await this.clearPopup();
-    }
-
-    protected transform (post: PostData) {
-        const rawData = post.vendorMetadata.rawdata;
-        post.title = rawData.title.join(' ');
-        post.location = rawData.subTitle.join(' ');
-        post.organization = rawData.subTitle.join(' ');
-        post.postedTime = rawData.hireInsights.join(' ');
-        post.description = rawData.description.join(' ');
-        post.salary = rawData.metadata.join(' ');
     }
 }

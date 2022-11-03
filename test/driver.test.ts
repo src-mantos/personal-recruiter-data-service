@@ -1,45 +1,37 @@
-/* eslint-disable no-undef */
 import 'reflect-metadata';
-import { PostScrapeManager } from '../src/scrape/PostScrapeManager';
-
-import container from '../src/DIBindings';
-import ScrapeRequest from '../src/entity/ScrapeRequest';
+import { assert, expect } from 'chai';
+import { it } from 'mocha';
+import container from '../src/util/DIBindings';
+import { MongoConnection } from '../src/dao/MongoConnection';
+import { ScrapeQueueRunner } from '../src/scrape/ScrapeQueueRunner';
+import { IScrapeRequest } from '../src/types';
 
 /**
- * This is where we want to validate the new additions and try new things.
- * Externalize the test for posterity and clarity
+ * This is where we want to validate the new additions.
+ * the ts-node integration is great for jest integration but debugging is problematic
+ * this is the primary debug entry point for vs code
  */
-
 process.on('SIGINT', () => {
     // attempt graceful close of the search/scrape
     (async () => {
-        console.log('shutting down IPC');
+        console.log('shutting down the db connection');
+        const conn = container.resolve(MongoConnection);
+        await conn.disconnect();
     })();
 });
 
 // This flag should be stored as run configuration
-jest.setTimeout(1000 * 60 * 10);
+// jest.setTimeout(1000 * 60 * 15);
 
-const simpleSearch: ScrapeRequest = new ScrapeRequest({
-    keyword: 'full stack engineer',
-    location: 'Seattle, WA',
-    pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */
-});
+it('Full Integration: will run the scrape queue with 1 request', async (done) => {
+    setTimeout(done, 1000 * 60 * 10);
+    const simpleSearch: IScrapeRequest = {
+        keyword: 'full stack engineer',
+        pageDepth: 1
+    };
 
-it('will Check the consolidation refactor', async () => {
-    // const instance = container.resolve(PostScrapeManager);
-    // await instance._ready;
-    // const searchUuid = instance.processRequest(simpleSearch);
-    const instance = container.resolve(PostScrapeManager);
-    await instance.initialize();
-    const searchUuid = instance.queueRequest(simpleSearch);
-    expect(searchUuid).not.toBeNull();
-    await instance.runPromiseQueue();
-    console.log(
-        JSON.stringify({
-            simpleSearch,
-            searchUuid
-        })
-    );
-    await instance.destruct();
+    const scrapeRunner: ScrapeQueueRunner = container.resolve(ScrapeQueueRunner);
+    scrapeRunner.enqueue(simpleSearch);
+
+    await scrapeRunner.runQueue();
 });
