@@ -28,7 +28,7 @@ process.on('SIGINT', () => {
 async function run () {
     const simpleSearch: IScrapeRequest = {
         keyword: 'full stack engineer',
-        // location: 'Seattle, WA',
+        // location: 'washington',
         pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */
     };
 
@@ -41,7 +41,7 @@ async function run () {
         console.log('************************************');
     }, 60000);
 
-    await scrapeRunner.runQueue();
+    await scrapeRunner.altRun(); // runQueue();
     clearInterval(timer);
 }
 

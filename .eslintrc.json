@@ -11,10 +11,6 @@
       "standard"
     ],
     "rules": {
-      "indent": ["warn", 4, { "SwitchCase": 1 }],
-      "semi":["warn","always"],
-      "@typescript-eslint/no-explicit-any":0,
-
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": "warn",
 
@@ -24,6 +20,53 @@
       "no-use-before-define":"off",
       "lines-between-class-members": ["error", "always", { "exceptAfterSingleLine": true }],
 
-      "@typescript-eslint/no-explicit-any": "warn"
+      "@typescript-eslint/no-explicit-any": "warn",
+      "space-infix-ops": ["warn", { "int32Hint": false }],
+      
+      "array-bracket-spacing": ["warn", "always", { "singleValue": false }],
+
+      "array-element-newline": ["warn", "consistent"],
+      "arrow-spacing": ["warn"],
+      "block-spacing": ["warn", "always"],
+      "brace-style": ["warn", "1tbs", { "allowSingleLine": true }],
+      // "comma-dangle": ["warn", "never", "only-multiline"],
+      "comma-spacing": ["warn", { "before": false, "after": true }],
+      "comma-style": ["error", "last"],
+      "dot-location": ["warn", "property"],
+      "func-call-spacing": ["warn", "never"],
+      "function-call-argument-newline": ["warn", "consistent"],
+      "function-paren-newline": ["warn", "multiline"],
+      "implicit-arrow-linebreak": ["warn", "beside"],
+      "indent": ["warn", 4, { "SwitchCase": 1 }],
+      "jsx-quotes": ["warn", "prefer-double"],
+      "key-spacing": ["warn", { "align": "colon" }],
+      "keyword-spacing": ["warn"],
+      "linebreak-style": ["warn", "unix"],
+      // "newline-per-chained-call": ["warn", { "ignoreChainWithDepth": 3 }],
+      "no-multi-spaces": ["warn", { 
+        "ignoreEOLComments": true, 
+        "exceptions": { 
+          "Property": true, 
+          "ImportDeclaration": true,
+          "VariableDeclarator": true,
+          "BinaryExpression": true
+        } 
+      }],
+      "no-multiple-empty-lines": ["warn", { "max": 3, "maxBOF": 2, "maxEOF": 2}],
+      "no-trailing-spaces": ["warn"],
+      "object-curly-newline": ["warn", { "multiline": true }],
+      "rest-spread-spacing": ["error", "never"],
+      "semi": ["warn", "always", { "omitLastInOneLineBlock": true}],
+      "semi-spacing": ["warn", { "before": false, "after": true }],
+      "semi-style": ["warn", "last"],
+      "space-in-parens": ["warn", "always", { "exceptions": ["{}"] }],
+      "template-curly-spacing": ["warn", "never"],
+      "wrap-iife": ["error", "inside"],
+
+      "arrow-body-style": ["error", "as-needed", { "requireReturnForObjectLiteral": true }],
+      "curly": ["warn", "multi", "consistent"],
+      "no-lonely-if": "error",
+      "no-unneeded-ternary": "error",
+      "prefer-object-spread": "warn",
     }
 }

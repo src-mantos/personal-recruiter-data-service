@@ -29,6 +29,10 @@ const ScrapeDataSchema = new Schema<ScrapeRequest>(
     },
     { collection: 'post-request' }
 );
+ScrapeDataSchema.pre('save', function (this, next) {
+    next();
+});
+
 export const ScrapeDataModel = model('post-request', ScrapeDataSchema);
 
 export type aggrigateData = {
@@ -47,22 +51,57 @@ export class ScrapeDao implements Dao<ScrapeRequest> {
         this.connection = connection;
     }
 
-    // async insert (entity: ScrapeRequest | IScrapeRequest): Promise<void> {
-    //     const shell = new ScrapeRequest(entity);
-    //     if (!shell._id) {
-    //         shell._id = new mongoose.Types.ObjectId();
-    //     }
-    //     await new ScrapeDataModel(shell).save();
+    // async update (entity: ScrapeRequest): Promise<mongoDoc<ScrapeRequest>> {
+    //     return ScrapeDataModel.findByIdAndUpdate(entity._id, entity).exec();
     // }
 
-    async update (entity: ScrapeRequest): Promise<mongoDoc<ScrapeRequest>> {
-        return ScrapeDataModel.findByIdAndUpdate(entity._id, entity).exec();
+    /**
+     * -The upset method will no longer support updating it's run metrics. @see {updateMetrics}-
+     * experimenting with parallelism, after an initial insert we would only update the
+     * posts associated to the request and run metrics.
+     * @param entity - ScrapeRequest
+     * @returns {mongoDoc<ScrapeRequest>}
+     */
+    async upsert (entity: ScrapeRequest): Promise<mongoDoc<ScrapeRequest>> {
+        const { _id, complete, keyword, pageDepth, posts, uuid, location, requestTime, metrics } = entity;
+        const updateObject:mongoose.UpdateQuery<ScrapeRequest> = {
+            $set: { complete, keyword, pageDepth, _id, uuid, location, requestTime, metrics },
+            $addToSet: { posts }
+        };
+
+        const doc = await ScrapeDataModel.findOneAndUpdate(
+            { uuid: entity.uuid },
+            updateObject,
+            { upsert: true, new: true, lean: true }
+        ).exec();
+        entity._id = doc._id;
+
+        return doc;
     }
 
-    async upsert (entity: ScrapeRequest): Promise<mongoDoc<ScrapeRequest>> {
-        const doc = await ScrapeDataModel.findOneAndUpdate({ uuid: entity.uuid }, entity, { upsert: true, new: true, lean: true }).exec();
-        entity._id = doc._id;
-        return doc;
+    /**
+     * @experimental
+     * a one-off method to only support updates to a request's metrics.
+     * [consider refactor with more practical experience in mongo]
+     * @param entity - ScrapeRequest
+     * @returns {mongoDoc<ScrapeRequest> | null}
+     */
+    async updateMetrics (entity: ScrapeRequest): Promise<mongoDoc<ScrapeRequest> | null> {
+        const { metrics } = entity;
+        const updateObject:mongoose.UpdateQuery<ScrapeRequest> = {
+            $set: { metrics }
+        };
+        if (metrics[0] !== undefined) {
+            const doc = await ScrapeDataModel.findOneAndUpdate(
+                { uuid: entity.uuid },
+                updateObject,
+                { upsert: false, lean: true }
+            ).exec();
+            if (doc !== null) { entity._id = doc._id; }
+            return doc;
+        } else {
+            return null;
+        }
     }
 
     async delete (entity: ScrapeRequest): Promise<mongoDoc<ScrapeRequest>> {

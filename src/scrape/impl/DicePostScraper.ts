@@ -14,27 +14,27 @@ import { ScrapeDao } from '../../dao/ScrapeDao';
 @injectable()
 export class DicePostScraper extends PostScraper {
     constructor (
-        @inject('scrape_template_vars') variables: string,
-        @inject('scrape_dice_url_template') urlTemplate: string,
-        @inject('PostDao') postDao: PostDao,
-        @inject('ScrapeDao') scrapeDao: ScrapeDao
+        @inject( 'scrape_template_vars' ) variables: string,
+        @inject( 'scrape_dice_url_template' ) urlTemplate: string,
+        @inject( 'PostDao' ) postDao: PostDao,
+        @inject( 'ScrapeDao' ) scrapeDao: ScrapeDao
     ) {
-        super(variables, postDao, scrapeDao);
+        super( variables, postDao, scrapeDao );
         this.currentPage = 1;
         this.urlTemplate = urlTemplate;
         this.linkSelector = 'a.card-title-link';
-        this.linkAttributes = ['href', 'id'];
+        this.linkAttributes = [ 'href', 'id' ];
         this.vendorDesc = 'DICE';
     }
 
-    async scrapePostData (post: PostData, page: Page): Promise<PostData> {
-        const listInfo = await page.locator('.row.job-info .iconsiblings').allInnerTexts();
+    async scrapePostData ( post: PostData, page: Page ): Promise<PostData> {
+        const listInfo = await page.locator( '.job-info p' ).allInnerTexts();
 
-        const title = await page.locator('.jobTitle').allInnerTexts();
-        const org = await page.locator('.employer.hiringOrganization').allInnerTexts();
-        const location = await page.locator('.location').allInnerTexts();
-        const postDate = await page.locator('.posted').allInnerTexts();
-        const detail = await page.locator('#jobdescSec').allInnerTexts();
+        const title = await page.locator( '.container h1' ).allInnerTexts();
+        const description = await page.locator( 'section.job-description' ).allInnerTexts();
+        const org = await page.locator( '.job-info .companyInfo li:first-child' ).allInnerTexts();
+        const location = await page.locator( '.job-info .companyInfo li:last-child' ).allInnerTexts();
+        const postDate = await page.locator( '.date-posted' ).allInnerTexts();
 
         post.vendorMetadata.rawdata = {
             listInfo,
@@ -42,27 +42,28 @@ export class DicePostScraper extends PostScraper {
             org,
             location,
             postDate,
-            detail
+            description
         };
 
         return post;
     }
 
-    protected transformData (post: PostData) {
+    protected transformData ( post: PostData ) {
         const rawData = post.vendorMetadata.rawdata;
-        post.title = rawData.title.join(' ');
-        post.location = rawData.location.join(' ').replace(/([\r\n]|\\r|\\n)+/, '');
-        post.organization = rawData.org.join(' ').replace(/([\r\n]|\\r|\\n)+/, '');
-        post.postedTime = rawData.postDate.join(' ');
-        post.description = rawData.detail.join(' ').replace(/([\r\n]|\\r|\\n)+/, '');
+        post.title = rawData.title.join( ' ' );
+        post.location = rawData.location.join( ' ' ).replace( /([\r\n]|\\r|\\n)+/, '' );
+        post.organization = rawData.org.join( ' ' ).replace( /([\r\n]|\\r|\\n)+/, '' );
+        post.postedTime = rawData.postDate.join( ' ' );
+        post.description = rawData.description.join( ' ' ).replace( /([\r\n]|\\r|\\n)+/, '' );
+        post.salary = rawData.listInfo.join( ' ' );
     }
 
-    async nextPage (search: IScrapeRequest): Promise<void> {
-        if (this.page === undefined) {
-            throw new Error('Scrape Browser must be initialized and ready.');
-        }
+    async nextPage ( search: IScrapeRequest ): Promise<void> {
+        if ( this.page === undefined )
+            throw new Error( 'Scrape Browser must be initialized and ready.' );
+
 
         this.currentPage++;
-        return this.navigateToPrimarySearch(search);
+        return this.navigateToPrimarySearch( search );
     }
 }

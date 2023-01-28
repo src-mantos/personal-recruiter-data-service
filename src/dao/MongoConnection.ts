@@ -24,10 +24,12 @@ export class MongoConnection implements config {
     password: string;
     dbName: string;
 
-    constructor (@inject('db_clientUrl') clientUrl: string,
-                 @inject('db_user') dbUser: string,
-                 @inject('db_pass') dbPass: string,
-                 @inject('db_name') dbName: string) {
+    constructor (
+        @inject( 'db_clientUrl' ) clientUrl: string,
+        @inject( 'db_user' ) dbUser: string,
+        @inject( 'db_pass' ) dbPass: string,
+        @inject( 'db_name' ) dbName: string
+    ) {
         this.init();
         this.connected = false;
         this.clientUrl = clientUrl;
@@ -36,50 +38,48 @@ export class MongoConnection implements config {
         this.dbName = dbName;
     }
 
-    private setConnectedListener (state: boolean) {
+    private setConnectedListener ( state: boolean ) {
         return () => {
             this.connected = state;
         };
     }
 
-    reconfig (opts:config) {
+    reconfig ( opts:config ) {
         const { clientUrl, user, password, dbName } = opts;
-        if (clientUrl !== undefined) {
+        if ( clientUrl !== undefined )
             this.clientUrl = clientUrl;
-        }
-        if (user !== undefined) {
+
+        if ( user !== undefined )
             this.user = user;
-        }
-        if (password !== undefined) {
+
+        if ( password !== undefined )
             this.password = password;
-        }
-        if (dbName !== undefined) {
+
+        if ( dbName !== undefined )
             this.dbName = dbName;
-        }
     }
 
     protected init () {
-        mongoose.connection.on('error', console.error);
-        mongoose.connection.on('connected', this.setConnectedListener(true));
-        mongoose.connection.on('open', this.setConnectedListener(true));
-        mongoose.connection.on('disconnecting', this.setConnectedListener(false));
-        mongoose.connection.on('disconnected', this.setConnectedListener(false));
+        mongoose.connection.on( 'error', console.error );
+        mongoose.connection.on( 'connected', this.setConnectedListener( true ) );
+        mongoose.connection.on( 'open', this.setConnectedListener( true ) );
+        mongoose.connection.on( 'disconnecting', this.setConnectedListener( false ) );
+        mongoose.connection.on( 'disconnected', this.setConnectedListener( false ) );
     }
 
-    async connect (onConnected?:{():Promise<void>}): Promise<void> {
+    async connect ( onConnected?:{():Promise<void>}): Promise<void> {
         const connectionOpts:mongoose.ConnectOptions = {
-            user: this.user,
-            pass: this.password,
+            user  : this.user,
+            pass  : this.password,
             dbName: this.dbName
         };
-        if (this.conn !== undefined) {
-            await this.conn.connect(this.clientUrl, connectionOpts);
-        } else {
-            this.conn = await mongoose.connect(this.clientUrl, connectionOpts);
-        }
-        if (onConnected !== undefined) {
+        if ( this.conn !== undefined )
+            await this.conn.connect( this.clientUrl, connectionOpts );
+        else
+            this.conn = await mongoose.connect( this.clientUrl, connectionOpts );
+
+        if ( onConnected !== undefined )
             await onConnected();
-        }
     }
 
     isConnected (): boolean {
@@ -87,6 +87,7 @@ export class MongoConnection implements config {
     }
 
     disconnect (): Promise<void> {
+        this.connected = false;
         return mongoose.disconnect();
     }
 }
@@ -97,12 +98,12 @@ export type MongoID = string | ObjectId;// | ObjectIdLike | number | Buffer | Ui
  * This should contain any useful signature that all interfaces need to implement.
  */
 export interface Dao<T> {
-    upsert(entity:T) :Promise<any>;
-    update(entity:T) :Promise<any>;
-    delete(entity:T) :Promise<any>;
+    upsert( entity:T ) :Promise<any>;
+    // update(entity:T) :Promise<any>;
+    delete( entity:T ) :Promise<any>;
     // find(entity:T) :Promise<void>;
 }
 
-export type mongoDoc<T> = (mongoose.Document<unknown, any, T> & T & {
+export type mongoDoc<T> = ( mongoose.Document<unknown, any, T> & T & {
     _id: mongoose.Types.ObjectId;
 }) | null;

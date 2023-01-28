@@ -341,7 +341,7 @@ export abstract class PostScraper {
             }
 
             await page.close();
-            await this.postDao.update(post);
+            await this.postDao.upsert(post);
         }
         return dataSet;
     }

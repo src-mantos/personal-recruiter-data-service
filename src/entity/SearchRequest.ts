@@ -12,13 +12,11 @@ export default class SearchRequest implements ISearchQuery {
     uuid: string = v4();
     requestTime?: Date;
     keywords: string;
-    location?: string;
 
-    constructor (opts?: ISearchQuery) {
+    constructor ( opts?: ISearchQuery ) {
         this.requestTime = new Date();
-        if (opts) {
-            this.keywords = opts.keywords;
-            this.location = opts.location;
+        if ( opts ) {
+            this.keywords = ( opts.keywords !== undefined ) ? opts.keywords : '*';
         }
     }
 }

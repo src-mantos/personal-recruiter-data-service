@@ -17,25 +17,33 @@ export interface ISearchQuery {
      */
     keywords: string;
     /**
-     * Optional Location Parameter
-     */
-    location?: string;
-    /**
-     * place holder for composite filter
-     * @experimental
+     * optional filter criteria
      */
     filters?: ISearchFilter[];
 }
 /**
  * Experimental filter object
+ * use the mongo standards https://www.mongodb.com/docs/manual/reference/operator/query/
  * @category External
  * @typedef {object} ISearchFilter
- * @property {string} key
- * @property {object} value
+ * @property {string} dataKey
+ * @property {string} operation
+ * @property {string} value
  */
 export interface ISearchFilter {
-    key: string;
-    value: any;
+    dataKey: '_id'|'userModified'|'captureTime'|'title'|'organization'|'location'|'description';
+    operation: FilterOperation;
+    value?: any;
+}
+/**
+ * @category External
+ * @typedef {object} FilterOperation
+ * @property {string} 
+ */
+export enum FilterOperation {
+    REGEX='REGEX',
+    IN='IN',
+    BOOL='BOOL'
 }
 
 /**
@@ -147,8 +155,8 @@ export interface IScrapePostDataRequest {
     complete: boolean;
     /** the raw metrics from individual scrape implementations */
     metrics: IRunMetric[];
-    /** Optional scrape result set */
-    posts?: IPostData[];
+    /** Relational ID's */
+    posts?: Partial<IPostData>[];
 }
 /**
  * communicating metrics out of the scrape/capture interface

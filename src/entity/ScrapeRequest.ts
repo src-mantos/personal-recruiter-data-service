@@ -20,9 +20,9 @@ export default class ScrapeRequest implements IScrapeRequest, IScrapePostDataReq
 
     complete: boolean;
     metrics: IRunMetric[];
-    posts: IPostData[];
+    posts: Partial<IPostData>[];
 
-    constructor (opts?: IScrapeRequest) {
+    constructor (opts?: IScrapeRequest&Partial<IScrapePostDataRequest>) {
         this.requestTime = new Date();
         this.complete = false;
         this.metrics = [];
@@ -30,6 +30,9 @@ export default class ScrapeRequest implements IScrapeRequest, IScrapePostDataReq
         this.posts = [];
         if (opts?.uuid !== undefined) {
             this.uuid = opts.uuid;
+        }
+        if (opts?._id !== undefined) {
+            this._id = opts._id;
         }
         if (opts) {
             this.keyword = opts.keyword;

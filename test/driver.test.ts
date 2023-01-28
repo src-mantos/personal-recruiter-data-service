@@ -33,5 +33,5 @@ it('Full Integration: will run the scrape queue with 1 request', async (done) =>
     const scrapeRunner: ScrapeQueueRunner = container.resolve(ScrapeQueueRunner);
     scrapeRunner.enqueue(simpleSearch);
 
-    await scrapeRunner.runQueue();
+    await scrapeRunner.altRun(); // runQueue();
 });
