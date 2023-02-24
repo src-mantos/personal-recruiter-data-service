@@ -10,41 +10,52 @@
  * @typedef {object} ISearchQuery
  * @property {string} keywords.required
  * @property {ISearchFilter[]} filters
+ * @property {ISort[]} sort
  */
 export interface ISearchQuery {
-    /**
-     * mongodb style text search query
-     */
+    /* mongodb style text search query, '' will return all data */
     keywords: string;
-    /**
-     * optional filter criteria
-     */
     filters?: ISearchFilter[];
+    sort? : ISort[];
+}
+/**
+ * experimental bronze plating
+ * @category External
+ * @typedef {object} ISort
+ * @property {string} dataKey - object key - enum:title,organization,location,salary,postedTime,captureTime
+ * @property {number} direction
+ */
+export interface ISort{
+    dataKey: IPostDataSearchKeys|string;
+    direction: number;
 }
 /**
  * Experimental filter object
  * use the mongo standards https://www.mongodb.com/docs/manual/reference/operator/query/
  * @category External
  * @typedef {object} ISearchFilter
- * @property {string} dataKey
- * @property {string} operation
+ * @property {string} dataKey - object key - enum:title,organization,location,description,salary,postedTime,_id,userModified,captureTime,directURL'
+ * @property {string} operation - filter type - enum:REGEX,IN,BOOL,BEFORE,AFTER
  * @property {string} value
  */
 export interface ISearchFilter {
-    dataKey: '_id'|'userModified'|'captureTime'|'title'|'organization'|'location'|'description';
+    // adding string for cross project typing
+    dataKey: IPostDataSearchKeys;
     operation: FilterOperation;
     value?: any;
 }
-/**
- * @category External
- * @typedef {object} FilterOperation
- * @property {string} 
- */
+
+// i could use keyof IPostData but i like the intellisense
+type IPostDataSearchKeys = '_id'|'userModified'|'captureTime'|'directURL'|'title'|'organization'|'location'|'description'|'salary'|'postedTime';
+
 export enum FilterOperation {
     REGEX='REGEX',
     IN='IN',
-    BOOL='BOOL'
+    BOOL='BOOL',
+    BEFORE='BEFORE',
+    AFTER='AFTER'
 }
+
 
 /**
  * IPost Data -
@@ -203,13 +214,13 @@ export class ComponentError implements Error {
     name: string;
     message: any;
     stack?: string;
-    constructor (msg: any, name?: string) {
+    constructor ( msg: any, name?: string ) {
         this.name = !name ? '[CE]' : name;
         this.message = msg;
     }
 
     toString (): string {
-        return this.name + ' ' + JSON.stringify(this.message);
+        return this.name + ' ' + JSON.stringify( this.message );
     }
 }
 /**
@@ -220,17 +231,17 @@ export class ComponentError implements Error {
 export class NavigationError extends ComponentError { }
 
 /** Not Used, i just wanted to have a reference */
-function aspectAnnotationExample (retryCount = 3) {
-    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+function aspectAnnotationExample ( retryCount = 3 ) {
+    return function ( target: any, propertyKey: string, descriptor: PropertyDescriptor ) {
         const originalMethod = descriptor.value;
 
-        descriptor.value = function (...args: any) {
-            for (let i = 0; i < retryCount; i++) {
-                console.log('%d / %d', i, retryCount);
+        descriptor.value = function ( ...args: any ) {
+            for ( let i = 0; i < retryCount; i++ ) {
+                console.log( '%d / %d', i, retryCount );
                 try {
-                    return originalMethod.apply(this, args);
-                } catch (ex) {
-                    console.error('Method Failure: ', JSON.stringify(ex));
+                    return originalMethod.apply( this, args );
+                } catch ( ex ) {
+                    console.error( 'Method Failure: ', JSON.stringify( ex ) );
                 }
             }
         };

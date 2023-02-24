@@ -6,7 +6,9 @@ import expressJSDocSwagger from 'express-jsdoc-swagger';
 import cors from 'cors';
 import container from './util/DIBindings';
 
-import { ScrapePath, ScrapeRouter, DataPath, DataRouter, PostPath, PostRouter, applyWebSockets } from './util/serverRoutes';
+// import { ScrapePath, ScrapeRouter, DataPath, DataRouter, PostPath, PostRouter, applyWebSockets } from './util/serverRoutes';
+import { ScrapePath, ScrapeRouter, applyWebSockets } from './routes/ScrapeRoutes';
+import { DataPath, DataRouter, PostPath, PostRouter } from './routes/DataRoutes';
 import { MongoConnection } from './dao/MongoConnection';
 /**
  * Main api runner
@@ -28,7 +30,7 @@ const options = {
     },
     baseDir              : __dirname,
     // Glob pattern to find your jsdoc files (multiple patterns can be added in an array)
-    filesPattern         : [ './util/*.js', './types.d.ts' ],
+    filesPattern         : [ './routes/*.js', './types.d.ts', './entity/*.js' ],
     // URL where SwaggerUI will be rendered
     swaggerUIPath        : '/v1/docs',
     // Expose OpenAPI UI
@@ -53,7 +55,17 @@ const debugLogger = ( req: Request, res: Response, next: {():void}) => {
 };
 const reqestLog = ( req: Request, res: Response, next: {():void}) => {
     const now = `${Date.now()} - `;
-    console.log( now + [ req.method, req.originalUrl, JSON.stringify( req.params ), JSON.stringify( req.query ) ].join( ', ' ) );
+    const logParams = [ req.method, req.originalUrl ];
+    if ( req.params )
+        logParams.push( 'params:' + JSON.stringify( req.params ) );
+
+    if ( req.query )
+        logParams.push( 'query:' + JSON.stringify( req.query ) );
+
+    if ( req.body )
+        logParams.push( 'body:' + JSON.stringify( req.body ) );
+
+    console.log( now + logParams.join( ', ' ) );
     next();
 };
 

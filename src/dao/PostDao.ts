@@ -91,8 +91,8 @@ export class PostDao implements Dao<PostData> {
     /**
      * general purpose post update/insert method to be used in conjunction with scrape operations.
      * Updates for post data won't update "normalized" fields
-     * @param entity 
-     * @returns 
+     * @param entity
+     * @returns
      */
     async upsert ( entity: PostData ): Promise<mongoDoc<PostData>> {
         const existing = await PostDataModel.findOne({ directURL: entity.directURL }).exec();
@@ -102,19 +102,20 @@ export class PostDao implements Dao<PostData> {
             entity._id = newDoc._id;
             return newDoc;
         } else {
-            PostData.apply( existing, entity ); //accounts for userModified flag
+            PostData.apply( existing, entity ); // accounts for userModified flag
             entity._id = existing._id;
             await existing.save();
             return existing;
         }
     }
+
     /**
      * hard update for post data
-     * @param entity 
-     * @returns 
+     * @param entity
+     * @returns
      */
     async update ( entity: PostData ): Promise<mongoDoc<PostData>> {
-        return PostDataModel.findOneAndUpdate({ directURL: entity.directURL }, entity).exec();
+        return PostDataModel.findOneAndUpdate({ directURL: entity.directURL }, entity ).exec();
     }
 
     async delete ( entity: PostData ): Promise<mongoDoc<PostData>> {
@@ -130,10 +131,22 @@ export class PostDao implements Dao<PostData> {
      * @returns {PostData[]}
      */
     async textSearch ( searchQuery: ISearchQuery ): Promise<PostData[]> {
-        const filterQuery = this.generateFilterCriteria(searchQuery.filters);
+        const filterQuery = this.generateFilterCriteria( searchQuery.filters );
         filterQuery.$text = { $search: searchQuery.keywords };
-        return PostDataModel.find(filterQuery, { score: { $meta: 'textScore' } })
-            .sort({ score: { $meta: 'textScore' } })
+        let sortParams:{
+            [key: string]: mongoose.SortOrder | {
+            $meta: 'textScore';
+            };
+        } = { score: { $meta: 'textScore' } };
+        if ( searchQuery.sort && searchQuery.sort.length > 0 ) {
+            sortParams = {};
+            for ( const { dataKey, direction } of searchQuery.sort )
+                sortParams[dataKey] = ( direction > 0 ) ? 1 : -1;
+            sortParams.score = -1;
+        }
+        return PostDataModel.find( filterQuery, { score: { $meta: 'textScore' } })
+            .sort( sortParams )
+            .select( '-activeRequest -vendorMetadata -indexMetadata' )
             .exec();
     }
 
@@ -142,54 +155,90 @@ export class PostDao implements Dao<PostData> {
      * @param filters - ISearchFilter[]
      * @returns {PostData[]}
      */
-    async getAllPosts (filters?:ISearchFilter[]): Promise<PostData[]> {
-        return PostDataModel.find(this.generateFilterCriteria(filters)).exec();
+    async getAllPosts ( searchQuery: ISearchQuery ): Promise<PostData[]> {
+        let sortParams:{
+            [key: string]: mongoose.SortOrder
+        } = {};
+        if ( searchQuery.sort && searchQuery.sort.length > 0 ) {
+            sortParams = {};
+            for ( const { dataKey, direction } of searchQuery.sort )
+                sortParams[dataKey] = ( direction > 0 ) ? 1 : -1;
+        }
+        return PostDataModel.find( this.generateFilterCriteria( searchQuery.filters ) )
+            .sort( sortParams )
+            .select( '-activeRequest -vendorMetadata -indexMetadata' )
+            .exec();
     }
 
     /**
-     * generates the and/or filters that get passed into 
-     * @param filters 
+     * generates the and/or filters that get passed into
+     * @param filters
      * @returns {mongoose.FilterQuery<PostData>}
      */
-    generateFilterCriteria(filters?:ISearchFilter[]):mongoose.FilterQuery<PostData>{
+    private generateFilterCriteria ( filters?:ISearchFilter[] ):mongoose.FilterQuery<PostData> {
         let queryObj:mongoose.FilterQuery<PostData> = {};
-        if(filters !== undefined && filters?.length){
-            const keyedFilters: Record<string,ISearchFilter[]> = {};
+        if ( filters !== undefined && filters?.length > 0 ) {
+            const keyedFilters: Record<string, ISearchFilter[]> = {};
             const andKeys:string[] = [];
-            for(let filter of filters){
+            for ( const filter of filters ) {
                 const fset = keyedFilters[filter.dataKey];
-                if(fset == undefined){
+                if ( fset === undefined )
                     keyedFilters[filter.dataKey] = [filter];
-                }else{
-                    keyedFilters[filter.dataKey].push(filter);
-                }
-                if(andKeys.indexOf(filter.dataKey) == -1){
-                    andKeys.push(filter.dataKey);
-                }
+                else
+                    keyedFilters[filter.dataKey].push( filter );
+
+                if ( andKeys.indexOf( filter.dataKey ) === -1 )
+                    andKeys.push( filter.dataKey );
             }
-            
-            queryObj = {$and:[]};
-            for(let keyField of andKeys){
-                const multiFilter:mongoose.FilterQuery<PostData> = {$or:[]};
-                for(let orField of keyedFilters[keyField]){
-                    const value = orField.value as string;
-                    let condition:any={};
-                    if(orField.operation == FilterOperation.REGEX){
-                        condition[orField.dataKey] = { $regex: '.*'+value+'.*', $options: 'i' };
-                    }else if(orField.operation == FilterOperation.BOOL){
-                        condition[orField.dataKey] = { $eq: value };
-                    }else if(orField.operation == FilterOperation.IN){
-                        const ids = value.split(",");
-                        condition[orField.dataKey] = { $in: ids };
-                    }
-                    multiFilter.$or?.push(condition);
-                }
-                queryObj.$and?.push(multiFilter);
+
+            queryObj = { $and: [] };
+            for ( const keyField of andKeys ) {
+                const multiFilter:mongoose.FilterQuery<PostData> = { $or: [] };
+                for ( const orField of keyedFilters[keyField] )
+                    // const value = orField.value as string;
+                    // const condition:any = {};
+                    // if ( orField.operation === FilterOperation.REGEX ) {
+                    //     condition[orField.dataKey] = { $regex: '.*' + value + '.*', $options: 'i' };
+                    // } else if ( orField.operation === FilterOperation.BOOL ) {
+                    //     condition[orField.dataKey] = { $eq: value };
+                    // } else if ( orField.operation === FilterOperation.IN ) {
+                    //     const ids = value.split( ',' );
+                    //     condition[orField.dataKey] = { $in: ids };
+                    // }
+                    multiFilter.$or?.push( this.getFilterCondition( orField ) );
+
+                queryObj.$and?.push( multiFilter );
             }
         }
         return queryObj;
     }
-    
+
+    private getFilterCondition ( filter:ISearchFilter ) {
+        const { dataKey, operation, value } = filter;
+        const condition:mongoose.FilterQuery<PostData> = {};
+
+        switch ( operation ) {
+            case FilterOperation.REGEX:
+                condition[dataKey] = { $regex: '.*' + value + '.*', $options: 'i' };
+                break;
+            case FilterOperation.IN:
+                condition[dataKey] = { $in: value.split( ',' ) };
+                break;
+            case FilterOperation.BOOL:
+                condition[dataKey] = { $eq: value };
+                break;
+            case FilterOperation.BEFORE:
+                condition[dataKey] = { $gte: value };
+                break;
+            case FilterOperation.AFTER:
+                condition[dataKey] = { $lte: value };
+                break;
+            default:
+                break;
+        }
+        return condition;
+    }
+
 
     /**
      * Retrieve post data by request
@@ -219,7 +268,7 @@ export class PostDao implements Dao<PostData> {
      * @returns {PostData|null}
      */
     async getPostById ( mongoID:any ):Promise<PostData|null> {
-        return PostDataModel.findOne({ _id: mongoID }).exec();
+        return PostDataModel.findOne({ _id: mongoID }).populate( 'vendorMetadata' ).exec();
     }
 
     /**
@@ -227,7 +276,7 @@ export class PostDao implements Dao<PostData> {
      * @param update - PostData
      * @returns {PostData|null}
      */
-    async setPostById ( update:PostData ):Promise<PostData|null> {
+    async updatePostById ( update:PostData|IPostData ):Promise<PostData|null> {
         const { _id, directURL } = update;
         return PostDataModel.findOneAndUpdate({ _id, directURL }, update ).exec();
     }
