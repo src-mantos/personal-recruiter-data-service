@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import expressWS from 'express-ws';
 import { check, ValidationError, validationResult } from 'express-validator';
 
 import container from '../util/DIBindings';
@@ -122,22 +121,3 @@ ScrapeRouter.patch(
         res.status( 404 );
     }
 );
-
-
-/**
- * @deprecated sockets add an extra layer of complexity not required for an educational project
- * @param server
- */
-export const applyWebSockets = ( server:expressWS.Instance ) => {
-    server.app.ws( '/v1/scrape/status/', function ( ws, req ) {
-        // ws.emit("message")
-        const timer = setInterval( () => {
-            ws.emit( 'message', scrapeRunner.getQueueStatus() );
-        }, 1000 );
-
-        ws.addEventListener( 'close', ( event ) => {
-            clearInterval( timer );
-        });
-        console.log( 'Connected To Socket' );
-    });
-};

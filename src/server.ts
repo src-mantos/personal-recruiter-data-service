@@ -1,13 +1,11 @@
 import 'reflect-metadata';
 
 import express, { Request, Response } from 'express';
-import expressWS from 'express-ws';
 import expressJSDocSwagger from 'express-jsdoc-swagger';
 import cors from 'cors';
 import container from './util/DIBindings';
 
-// import { ScrapePath, ScrapeRouter, DataPath, DataRouter, PostPath, PostRouter, applyWebSockets } from './util/serverRoutes';
-import { ScrapePath, ScrapeRouter, applyWebSockets } from './routes/ScrapeRoutes';
+import { ScrapePath, ScrapeRouter } from './routes/ScrapeRoutes';
 import { DataPath, DataRouter, PostPath, PostRouter } from './routes/DataRoutes';
 import { MongoConnection } from './dao/MongoConnection';
 /**
@@ -41,18 +39,11 @@ const options = {
     multiple             : true
 };
 expressJSDocSwagger( app )( options );
-const socket = expressWS( app );
 
 const port = container.resolve( 'service_port' );
 const mongo: MongoConnection = container.resolve( MongoConnection );
 const basePath = '/v1';
-const debugLogger = ( req: Request, res: Response, next: {():void}) => {
-    const now = `${Date.now()} - `;
-    console.log( `${Date.now()} - ${req.originalUrl}` );
-    console.log( now + 'req.params', JSON.stringify( req.params ) );
-    console.log( now + 'req.query', JSON.stringify( req.query ) );
-    next();
-};
+
 const reqestLog = ( req: Request, res: Response, next: {():void}) => {
     const now = `${Date.now()} - `;
     const logParams = [ req.method, req.originalUrl ];
@@ -77,10 +68,9 @@ export const init = ( async () => {
     app.use( basePath + ScrapePath, ScrapeRouter );
     app.use( basePath + DataPath, DataRouter );
     app.use( basePath + PostPath, PostRouter );
-    applyWebSockets( socket );
     app.use( ( _req, res ) => res.status( 404 ).json({ message: "These are not the droids you're looking for." }) );
 
-    const server = socket.app.listen( port, () => {
+    const server = app.listen( port, () => {
         console.log( `started http://localhost:${port}` );
         mongo.connect();
     });

@@ -1,14 +1,11 @@
 import express, { Request, Response } from 'express';
-import expressWS from 'express-ws';
 import { check, ValidationError, validationResult } from 'express-validator';
 
 import container from '../util/DIBindings';
-import { ScrapeQueueRunner } from '../scrape/ScrapeQueueRunner';
 
 import { IScrapeRequest, ISearchQuery, IPostData, IPostMetaData } from '../types';
 import { PostDao } from '../dao/PostDao';
 import { ScrapeDao } from '../dao/ScrapeDao';
-import ScrapeRequest from '../entity/ScrapeRequest';
 import PostData from '../entity/PostData';
 
 

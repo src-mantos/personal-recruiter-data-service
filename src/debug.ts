@@ -15,34 +15,34 @@ let timer:NodeJS.Timer;
  * the ts-node integration is great for jest integration but debugging is problematic
  * this is the primary debug entry point for vs code
  */
-process.on('SIGINT', () => {
+process.on( 'SIGINT', () => {
     // attempt graceful close of the search/scrape
-    (async () => {
-        clearInterval(timer);
-        console.log('shutting down the db connection');
-        const conn = container.resolve(MongoConnection);
+    ( async () => {
+        clearInterval( timer );
+        console.log( 'shutting down the db connection' );
+        const conn = container.resolve( MongoConnection );
         await conn.disconnect();
     })();
 });
 
 async function run () {
     const simpleSearch: IScrapeRequest = {
-        keyword: 'full stack engineer',
+        keyword  : 'full stack engineer',
         // location: 'washington',
         pageDepth: 1 /* this includes underling pagination handling and is required minimum for testing any scraper */
     };
 
-    const scrapeRunner: ScrapeQueueRunner = container.resolve(ScrapeQueueRunner);
-    scrapeRunner.enqueue(simpleSearch);
+    const scrapeRunner: ScrapeQueueRunner = container.resolve( ScrapeQueueRunner );
+    scrapeRunner.enqueue( simpleSearch );
 
-    timer = setInterval(() => {
-        console.log('************************************');
-        console.log(JSON.stringify(scrapeRunner.getQueueStatus()));
-        console.log('************************************');
-    }, 60000);
+    timer = setInterval( () => {
+        console.log( '************************************' );
+        console.log( JSON.stringify( scrapeRunner.getQueueStatus() ) );
+        console.log( '************************************' );
+    }, 60000 );
 
     await scrapeRunner.altRun(); // runQueue();
-    clearInterval(timer);
+    clearInterval( timer );
 }
 
 run();

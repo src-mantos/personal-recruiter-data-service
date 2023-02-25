@@ -4,7 +4,7 @@ import { MongoConnection, MongoID, Dao, mongoDoc } from './MongoConnection';
 import mongoose, { Schema, model, FilterQuery, Document, PreSaveMiddlewareFunction, CallbackWithoutResultAndOptionalError, SaveOptions } from 'mongoose';
 import { inject, injectable } from 'tsyringe';
 import { ScrapeDataModel } from './ScrapeDao';
-import ScrapeRequest from '../entity/ScrapeRequest';
+
 
 export const postCollectionName = 'post-data';
 /** subdoc for raw data */

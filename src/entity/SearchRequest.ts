@@ -15,8 +15,7 @@ export default class SearchRequest implements ISearchQuery {
 
     constructor ( opts?: ISearchQuery ) {
         this.requestTime = new Date();
-        if ( opts ) {
+        if ( opts )
             this.keywords = ( opts.keywords !== undefined ) ? opts.keywords : '*';
-        }
     }
 }

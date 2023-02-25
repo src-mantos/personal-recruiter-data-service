@@ -4,7 +4,6 @@ import { singleton, inject } from 'tsyringe';
  * Database connection class.
  *
  * @remarks
- *
  * a traditional oo/java convention, consolidation setup & exposing connection operations.
  *
  * Due to the less traditional nature of Mongo, we may want to refactor.
@@ -99,9 +98,7 @@ export type MongoID = string | ObjectId;// | ObjectIdLike | number | Buffer | Ui
  */
 export interface Dao<T> {
     upsert( entity:T ) :Promise<any>;
-    // update(entity:T) :Promise<any>;
     delete( entity:T ) :Promise<any>;
-    // find(entity:T) :Promise<void>;
 }
 
 export type mongoDoc<T> = ( mongoose.Document<unknown, any, T> & T & {

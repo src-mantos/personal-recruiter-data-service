@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
  * - after fetching data we will update/populate metadata and top level attributes
  * @see {IPostData}
  * {@inheritDoc IPostData}
- * 
+ *
  * swagger specific markup - i dislike the cross cut dependency
  * @typedef {object} PostData
  * @property {string} _id - unique identifier
@@ -47,9 +47,9 @@ export default class PostData implements IPostData, IPostMetaData {
     constructor ( opts?: IPostData ) {
         if ( opts !== undefined )
             for ( const key in opts ) {
-                const val = ( <any>opts )[key];
+                const val = ( opts as any )[key];
                 if ( val !== undefined && val !== null )
-                    ( <any> this )[key] = val;
+                    ( this as any )[key] = val;
             }
 
 

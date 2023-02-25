@@ -16,25 +16,23 @@ export default class ScrapeRequest implements IScrapeRequest, IScrapePostDataReq
     location?: string;
     pageDepth: number;
 
-    // results: Collection<PostData> = new Collection<PostData>(this);
-
     complete: boolean;
     metrics: IRunMetric[];
     posts: Partial<IPostData>[];
 
-    constructor (opts?: IScrapeRequest&Partial<IScrapePostDataRequest>) {
+    constructor ( opts?: IScrapeRequest&Partial<IScrapePostDataRequest> ) {
         this.requestTime = new Date();
         this.complete = false;
         this.metrics = [];
         this.pageDepth = 1;
         this.posts = [];
-        if (opts?.uuid !== undefined) {
+        if ( opts?.uuid !== undefined )
             this.uuid = opts.uuid;
-        }
-        if (opts?._id !== undefined) {
+
+        if ( opts?._id !== undefined )
             this._id = opts._id;
-        }
-        if (opts) {
+
+        if ( opts ) {
             this.keyword = opts.keyword;
             this.location = opts.location;
             this.pageDepth = opts.pageDepth;
