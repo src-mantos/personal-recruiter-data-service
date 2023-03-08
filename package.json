@@ -8,15 +8,13 @@
     "scripts": {
         "build": "npx tsc --build",
         "exec": "npx ts-node",
-        "doc": " npx typedoc --entryPointStrategy expand ./src",
+        "docs": " npx typedoc --entryPointStrategy expand ./src",
         "serve": "yarn build && node -r source-map-support/register ./dist/src/server.js",
         "debug": "yarn build && node --trace-warnings -r source-map-support/register ./dist/src/debug.js",
         "debugRunner": "yarn build && node -r source-map-support/register ./dist/src/debugRunner.js",
         "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha -r ts-node/register",
         "check": "jest --config ./test/jest.config.ts /test/driver.test.ts",
         "testy": "mocha -r ts-node/register --full-trace --inline-diffs './test/dao/DaoIntegration.test.ts'",
-        "wtf": "mocha -r ts-node/register --full-trace './test/dao/DataQueries.test.ts'",
-        "wtest": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha -r ts-node/register 'test/**/*.ts'",
         "lint": "eslint .",
         "lint-fix": "eslint . --fix --quiet"
     },
