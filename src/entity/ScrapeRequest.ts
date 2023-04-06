@@ -3,9 +3,9 @@ import mongoose from 'mongoose';
 import { v4 } from 'uuid';
 
 /**
- * @see {IScrapeRequest} & @see {IScrapePostDataRequest}
+ * @class
  * the Scrape Request Implementation uses 2 interfaces, 1 publicly facing and the other for internal use.
- * {@inheritDoc IScrapeRequest} {@inheritDoc IScrapePostDataRequest}
+ * @see {@link IScrapeRequest} & {@link IScrapePostDataRequest}
  */
 export default class ScrapeRequest implements IScrapeRequest, IScrapePostDataRequest {
     _id: mongoose.Types.ObjectId;

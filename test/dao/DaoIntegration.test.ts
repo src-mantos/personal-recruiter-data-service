@@ -18,9 +18,7 @@ before(async () => {
     return connection.connect();
 });
 
-after(async () => {
-    return connection.disconnect();
-});
+after(async () => connection.disconnect());
 
 describe('Sample Database Execution', async function (this:Mocha.Suite) {
     const postDao = container.resolve(PostDao);

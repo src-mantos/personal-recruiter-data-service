@@ -2,10 +2,11 @@ import { MongoConnection, Dao, mongoDoc } from './MongoConnection';
 import mongoose, { Schema, model } from 'mongoose';
 import { inject, injectable } from 'tsyringe';
 
-import type { IScrapeRequest, IPostData, IVendorMetadata, ISearchQuery } from '../types';
+import type { IScrapeRequest, IPostData } from '../types';
 
 import ScrapeRequest from '../entity/ScrapeRequest';
 
+/** Scrape request document schema */
 const ScrapeDataSchema = new Schema<ScrapeRequest>(
     {
         _id        : Schema.Types.ObjectId,
@@ -17,15 +18,6 @@ const ScrapeDataSchema = new Schema<ScrapeRequest>(
         complete   : { type: Boolean, required: true },
         metrics    : Schema.Types.Mixed,
         posts      : [{ type: Schema.Types.ObjectId, ref: 'post-data' }]
-
-        /** [
-            {
-                vendorDesc: { type: String, required: true },
-                numTotal: { type: Number, required: true },
-                numComplete: { type: Number, required: true },
-                pageSize: { type: Number, required: true },
-            },
-        ] */
     },
     { collection: 'post-request' }
 );
@@ -42,7 +34,9 @@ export type aggrigateData = {
 }
 
 /**
- * Under the current implementation we assume the database has been connected too, elsewhere.
+ * Primary query interface for scrape data.
+ *
+ * Under the current implementation we assume the database has been connected too, from elsewhere.
  */
 @injectable()
 export class ScrapeDao implements Dao<ScrapeRequest> {
@@ -98,6 +92,7 @@ export class ScrapeDao implements Dao<ScrapeRequest> {
         }
     }
 
+    /** @param ScrapeRequest - document id or uuid required */
     async delete ( entity: ScrapeRequest ): Promise<mongoDoc<ScrapeRequest>> {
         if ( entity._id !== undefined )
             return ScrapeDataModel.findByIdAndDelete( entity._id ).exec();

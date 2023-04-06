@@ -3,12 +3,12 @@ import ScrapeRequest from './ScrapeRequest';
 import mongoose from 'mongoose';
 
 /**
+ * @class
  * Entity Implementation -
  * This class has a long running life cycle.
  * - first we will have a shell w/ directURL and metadata
  * - after fetching data we will update/populate metadata and top level attributes
- * @see {IPostData}
- * {@inheritDoc IPostData}
+ * @see {@link IPostData} @inheritdoc
  *
  * swagger specific markup - i dislike the cross cut dependency
  * @typedef {object} PostData
@@ -85,6 +85,7 @@ export default class PostData implements IPostData, IPostMetaData {
 
     /**
      * Update top level data with respect to user modifications
+     * @TODO deprecate and refactor
      * @param applyToObj - Post Data Object to be updated
      * @param applyFromObj - Reference Post Data object
      */

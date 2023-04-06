@@ -1,9 +1,9 @@
 import express, { Request, Response } from 'express';
-import { check, ValidationError, validationResult } from 'express-validator';
+import { check, validationResult } from 'express-validator';
 
 import container from '../util/DIBindings';
 
-import { IScrapeRequest, ISearchQuery, IPostData, IPostMetaData } from '../types';
+import { IScrapeRequest, ISearchQuery, IPostData } from '../types';
 import { PostDao } from '../dao/PostDao';
 import { ScrapeDao } from '../dao/ScrapeDao';
 import PostData from '../entity/PostData';

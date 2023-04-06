@@ -1,19 +1,31 @@
 import mongoose, { Mongoose, ObjectId, HydratedDocument } from 'mongoose';
 import { singleton, inject } from 'tsyringe';
-/**
- * Database connection class.
- *
- * @remarks
- * a traditional oo/java convention, consolidation setup & exposing connection operations.
- *
- * Due to the less traditional nature of Mongo, we may want to refactor.
- */
+
+/** basic config definition TODO: refactor */
 type config = {
     user?:string;
     password?:string;
     dbName?:string;
     clientUrl?:string;
 };
+/** a short cut type for hackery TODO: deprecate */
+export type MongoID = string | ObjectId;
+/**
+ * @class a data access interface. TODO: deprecate & remove
+ */
+export interface Dao<T> {
+    upsert( entity:T ) :Promise<any>;
+    delete( entity:T ) :Promise<any>;
+}
+/** TODO: refactor */
+export type mongoDoc<T> = ( mongoose.Document<unknown, any, T> & T & {
+    _id: mongoose.Types.ObjectId;
+}) | null;
+
+/**
+ * @class A java style database connection object.
+ * all of the DAO's require a connection be established for the query interface.
+ */
 @singleton()
 export class MongoConnection implements config {
     conn: Mongoose;
@@ -91,16 +103,4 @@ export class MongoConnection implements config {
     }
 }
 
-export type MongoID = string | ObjectId;// | ObjectIdLike | number | Buffer | Uint8Array | undefined
-/**
- * Dao<T> - a common database interface
- * This should contain any useful signature that all interfaces need to implement.
- */
-export interface Dao<T> {
-    upsert( entity:T ) :Promise<any>;
-    delete( entity:T ) :Promise<any>;
-}
 
-export type mongoDoc<T> = ( mongoose.Document<unknown, any, T> & T & {
-    _id: mongoose.Types.ObjectId;
-}) | null;

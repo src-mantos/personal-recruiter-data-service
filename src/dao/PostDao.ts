@@ -63,6 +63,8 @@ PostDataSchema.index(
         sparse: true
     }
 );
+
+/** TODO: refactor */
 const refDataHook: PreSaveMiddlewareFunction<PostData> = async function ( this: PostData, next: CallbackWithoutResultAndOptionalError, opts: SaveOptions ) {
     if ( !this._id )
         this._id = new mongoose.Types.ObjectId();
@@ -73,7 +75,9 @@ PostDataSchema.pre<PostData>( 'save', refDataHook );
 export const PostDataModel = model( postCollectionName, PostDataSchema );
 
 /**
- * Under the current implementation we assume the database has been connected too, elsewhere.
+ * Primary query interface for job post data.
+ *
+ * Under the current implementation we assume the database has been connected too, from elsewhere.
  */
 @injectable()
 export class PostDao implements Dao<PostData> {
@@ -118,6 +122,7 @@ export class PostDao implements Dao<PostData> {
         return PostDataModel.findOneAndUpdate({ directURL: entity.directURL }, entity ).exec();
     }
 
+    /** @param PostData - document id or directURL required */
     async delete ( entity: PostData ): Promise<mongoDoc<PostData>> {
         if ( entity._id !== undefined )
             return PostDataModel.findByIdAndDelete( entity._id ).exec();
@@ -195,16 +200,6 @@ export class PostDao implements Dao<PostData> {
             for ( const keyField of andKeys ) {
                 const multiFilter:mongoose.FilterQuery<PostData> = { $or: [] };
                 for ( const orField of keyedFilters[keyField] )
-                    // const value = orField.value as string;
-                    // const condition:any = {};
-                    // if ( orField.operation === FilterOperation.REGEX ) {
-                    //     condition[orField.dataKey] = { $regex: '.*' + value + '.*', $options: 'i' };
-                    // } else if ( orField.operation === FilterOperation.BOOL ) {
-                    //     condition[orField.dataKey] = { $eq: value };
-                    // } else if ( orField.operation === FilterOperation.IN ) {
-                    //     const ids = value.split( ',' );
-                    //     condition[orField.dataKey] = { $in: ids };
-                    // }
                     multiFilter.$or?.push( this.getFilterCondition( orField ) );
 
                 queryObj.$and?.push( multiFilter );
@@ -254,6 +249,10 @@ export class PostDao implements Dao<PostData> {
         return null;
     }
 
+    /**
+     * @deprecated
+     * experimental block
+     */
     async getPostDataFacets ():Promise<any> {
         return PostDataModel.aggregate().facet({
             title       : [{ $group: { _id: '$title' } }],

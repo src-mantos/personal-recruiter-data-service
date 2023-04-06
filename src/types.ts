@@ -44,8 +44,12 @@ export interface ISearchFilter {
     operation: FilterOperation;
     value?: any;
 }
-
-// i could use keyof IPostData but i like the intellisense
+/**
+ * @typedef {string} IPostDataSearchKeys
+ * the current, most likely to be useful fields that would be acceptable.
+ *
+ * i could use keyof IPostData but i like the intellisense
+ */
 type IPostDataSearchKeys = '_id'|'userModified'|'captureTime'|'directURL'|'title'|'organization'|'location'|'description'|'salary'|'postedTime';
 
 export enum FilterOperation {

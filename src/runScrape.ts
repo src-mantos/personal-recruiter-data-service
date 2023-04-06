@@ -1,5 +1,5 @@
 /**
- * Fork Scrape Run Request
+ * Fork Scrape Run Request per Scrape Implementation
  * @param scraper - process.argv[2]
  * @param uuid - process.argv[3]
  * @param pageDepth - process.argv[4]
@@ -7,7 +7,7 @@
  * @param location - process.argv[6]
  */
 import 'reflect-metadata';
-import { ISearchQuery, IScrapeRequest, IPostData, IPC } from './types';
+import { IScrapeRequest, IPC } from './types';
 
 import { MongoConnection } from './dao/MongoConnection';
 import container from './util/DIBindings';
@@ -29,7 +29,7 @@ const request:IScrapeRequest = {
 
 const sendMessage = ( obj:IPC<any> ) => {
     if ( process && process.send )
-        process.send( obj );// JSON.stringify(obj));
+        process.send( obj );
     else
         console.error( 'Unable to report to parent process.' );
 };

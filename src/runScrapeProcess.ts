@@ -6,7 +6,7 @@
  * @param location - process.argv[5]
  */
 import 'reflect-metadata';
-import { ISearchQuery, IScrapeRequest, IPostData, IPC } from './types';
+import { IScrapeRequest, IPC } from './types';
 import { MongoConnection } from './dao/MongoConnection';
 import { ScrapeDao } from './dao/ScrapeDao';
 import container from './util/DIBindings';
@@ -25,7 +25,7 @@ const request:IScrapeRequest = {
 
 const sendMessage = ( obj:IPC<any> ) => {
     if ( process && process.send )
-        process.send( obj );// JSON.stringify(obj));
+        process.send( obj );
     else
         console.error( 'Unable to report to parent process.' );
 };

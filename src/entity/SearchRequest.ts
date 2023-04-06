@@ -3,8 +3,8 @@ import { v4 } from 'uuid';
 import mongoose from 'mongoose';
 
 /**
- * @see {ISearchQuery}
- * {@inheritDoc ISearchQuery}
+ * @class
+ * @see {@link ISearchQuery}
  */
 export default class SearchRequest implements ISearchQuery {
     _id: mongoose.Types.ObjectId;

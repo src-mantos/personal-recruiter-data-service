@@ -15,9 +15,7 @@ before(() => {
     return connection.connect();
 });
 
-after(() => {
-    return connection.disconnect();
-});
+after(() => connection.disconnect());
 
 it('pulling common posts', async () => {
     const scrapeDao:ScrapeDao = container.resolve(ScrapeDao);

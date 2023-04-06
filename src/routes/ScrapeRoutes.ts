@@ -1,10 +1,10 @@
 import express, { Request, Response } from 'express';
-import { check, ValidationError, validationResult } from 'express-validator';
+import { check, validationResult } from 'express-validator';
 
 import container from '../util/DIBindings';
 import { ScrapeQueueRunner } from '../scrape/ScrapeQueueRunner';
 
-import { IScrapeRequest, ISearchQuery, IPostData, IPostMetaData } from '../types';
+import { IScrapeRequest } from '../types';
 
 export const ScrapePath = '/scrape';
 export const ScrapeRouter = express.Router();

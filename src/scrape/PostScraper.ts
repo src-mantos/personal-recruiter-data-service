@@ -11,21 +11,33 @@ function IgnoreFactory ( page: Page | undefined ) {
 }
 
 /**
+ * @class
  * Common base class for scrape implementations.
+ * @description
  * the primary workflow for all implementations:
- * - await init();
- * - await run();
+ * - Post creation initialization of browser `await init()`
+ * - Main execution function `await run()`
  *   - buildDataTree() // get a width first index of job post links & metadata
  *   - fetchPostDataSet() // get full post data from the index
+ * @typedef {object} PostScraper
+ * @property {number} currentPage - related to {@link IScrapeRequest.pageDepth}
+ * @property {number} elementCount - items per page
+ * @member {Browser} browser - Playwright Scrape browser window
+ * @member {Page} page - Playwright Scrape Page
+ * @member {string[]} templateVars - env controlled attribute list
+ * @member {string} urlTemplate - env controlled parameterized url
+ * @member {PostDao} postDao - {@link PostDao}
+ * @member {ScrapeDao} scrapeDao - {@link ScrapeDao}
+ *
+ * @property {PostData[]} runData - vestigial context data {@link PostData} [TODO] refactor & remove
+ * @property {string} linkSelector - override in implementation
+ * @property {string} linkAttributes - override in implementation
+ * @property {string} vendorDesc - override in implementation
  */
 export abstract class PostScraper {
-    /** @type {number} related to {@link IScrapeRequest.pageDepth} */
     currentPage: number;
-    /** @type {number} */
     elementCount: number;
-    /** @private @type {Browser} Playwright Scrape browser window */
     browser?: Browser;
-    /** @private @type {Page} Playwright Scrape Page */
     page?: Page;
     templateVars: string[];
     urlTemplate: string;
@@ -40,9 +52,10 @@ export abstract class PostScraper {
      * auto injected dependency @see tsyringe
      * @param variables
      * @param postDao
+     * @param scrapeDao
      */
     constructor (
- @inject( 'scrape_template_vars' ) variables: string,
+    @inject( 'scrape_template_vars' ) variables: string,
                  @inject( 'PostDao' ) postDao: PostDao,
                  @inject( 'ScrapeDao' ) scrapeDao: ScrapeDao
     ) {
@@ -308,8 +321,8 @@ export abstract class PostScraper {
      * - navigate to page
      * - scrape the raw data
      * - preforme any implementation specific transform @see {PostScraper.transform}
-     * @param dataSet
-     * @returns
+     * @param {PostData[]} dataSet
+     * @param {IRunMetric} metric
      */
     protected async fetchPostDataSet ( dataSet: PostData[], metric: IRunMetric ): Promise<PostData[]> {
         for ( const post of dataSet ) {
